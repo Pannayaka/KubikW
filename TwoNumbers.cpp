@@ -3,7 +3,7 @@
 #include <thread>
 #include <chrono>
 
-const double bpm = 60.0;
+const double bpm = 120.0;
 const double beat = 60.0 / bpm;   // ~0.857 sec
 const double bar = beat * 4;      // ~3.43 sec
 
