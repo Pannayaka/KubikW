@@ -72,90 +72,6 @@ void draw_box_alt(int width, int height, int x_offset = 0, int y_offset = 0) {
     std::cout << "+" << std::string(width - 2, '<') << "+" << std::endl;
 }
 
-// animation function: prints inside the large box above controls
-void playAnimationHeal(int ms_per_frame, int loops){
-    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
-    // choose a comfortable inner area inside that large box
-    int anim_start_x = box_x;                // left column inside the big box
-    int anim_start_y = box_y - 16;           // a few lines below the big box top border
-    int anim_width = box_width;              // max width to clear
-    // frames (multi-line)
-    std::vector<std::vector<std::string>> frames = {
-        {  
-                                                            
-"                                                            "
-"                                                            "
-"                           .-%=*#@=.                        "
-"                           .%%@@@@=:                        "
-"                     :*@@@@@@%@@@%@-                        "
-"                    *@%@*=.:@%%#@@@-                        "
-"                .:#%@@#*.  .+@@#@@@-                        "
-"               -%@@%##-.    .*@@@%#.                        "
-"             :%%@@%@*:...:+@@%#%%@#*:.                      "
-"             .%%*###+--%#@@%%#@@%#@@#*%=:                   "
-"              -%%@*#*%%+**@%%%@#%#%@#*+:+=                  "
-"               ..-+%%%*%%%@@@@@%@@@%@@@@##                  "
-"                     .-++*%%@@@@@%##%#%@%#                  "
-"                          :*@+%@*%@*%#@@#-                  "
-"                          +*+%@@%%=%%@#%#%                  "
-"                          *=*%@#+=*#@@@@@+                  "
-"                          ++**%@@@%@##@@*%                  "
-"--------------------------#@@%+*=+==+=#@##------------------"
-"                                                            "
-"                                                            "
-"                                                            "
-"                                                            "
-                                                       
-        },
-        {
-            "      .----.        ",
-            "     /      \\       ",
-            "    | ( •_•)>⌐■-■|  ",
-            "     \\  --  /       ",
-            "      `----'        "
-        },
-        {
-            "      .----.        ",
-            "     /      \\       ",
-            "    |  (•_•)  |     ",
-            "     \\  |\\  /       ",
-            "      `----'        "
-        },
-        {
-            "      .----.        ",
-            "     /      \\       ",
-            "    |  (•_•)  |     ",
-            "     \\  /|\\ /       ",
-            "      `----'        "
-        }
-    };
-
-    // loops * frames
-    for(int lp = 0; lp < loops; lp++){
-        for(size_t f = 0; f < frames.size(); f++){
-            // draw each line of the frame
-            for(size_t line = 0; line < frames[f].size(); line++){
-                // center the frame horizontally inside the big box inner area
-                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
-                int line_y = anim_start_y + (int)line;
-                // clear the full line region first
-                set_cursor_position(anim_start_x, line_y);
-                std::cout << std::string(anim_width, ' ');
-                // print the frame line
-                set_cursor_position(line_x, line_y);
-                std::cout << frames[f][line];
-            }
-            std::cout << std::flush;
-            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
-        }
-    }
-    // after animation, clear the animation area
-    for(int i = 0; i < 6; i++){
-        set_cursor_position(anim_start_x, anim_start_y + i);
-        std::cout << std::string(anim_width, ' ');
-    }
-    set_cursor_position(0, action_y + action_box_height + 4);
-}
 
 void loading_dots(){
     for(int i = 0; i < 5; i++){
@@ -286,7 +202,6 @@ void shoot(int which, bool isDoubleDamage){
     else if(which == 0 && bulletNow == 0){
         whoseTurn = 1;
         message = "You shot him with a blank";
-        playAnimationHeal(1000, 5);
     }
     else if(which == 1 && bulletNow == 1){
         player_life -= 1;
@@ -303,36 +218,6 @@ void shoot(int which, bool isDoubleDamage){
     std::this_thread::sleep_for(std::chrono::seconds(3)); // Wait for the player to see
 }
 
-
-void shootSelf(int which, bool isDoubleDamage){
-    std::string message = "";
-    if(which == 0 && bulletNow == 1 && playerDD){
-        player_life -= 2;
-        whoseTurn = 1;
-        message = "You shot yourself using Double Damage, causing your health to drop by 2.";
-    } else if(which == 0 && bulletNow == 1){
-        player_life -= 1;
-        whoseTurn = 1;
-        message = "You shot yourself with a live bullet";
-    }
-    else if(which == 0 && bulletNow == 0){
-        message = "You shot yourself, but luckily it was a blank";
-    }
-    else if(which == 1 && bulletNow == 1){
-        enemy_life -= 1;
-        whoseTurn = 0;
-        message = "The enemy shot himself with a live bullet";
-    }
-    else if(which == 1 && bulletNow == 0){
-        message = "The enemy shot himself, but it was a blank";
-    }
-    clearBox();
-    print_in_box_animated(message, box_x, box_y, box_width, box_height, 40);
-    updateLife();
-    std::this_thread::sleep_for(std::chrono::seconds(3)); // Wait for the player to see
-}
-
-
 void clearBox(){ // clear the box conveniently, my favourite :)
     print_in_box("                                                                        ", box_x, box_y-2, box_width, box_height);
     print_in_box("                                                                        ", box_x, box_y-1, box_width, box_height);
@@ -341,6 +226,811 @@ void clearBox(){ // clear the box conveniently, my favourite :)
     print_in_box("                                                                        ", box_x, box_y + 2, box_width, box_height);
 }
 
+void resetscreen(){
+    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
+
+    draw_box(box_width, box_height, box_x, box_y); //description box
+
+    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); //highlighted box
+
+    draw_box(action_box_width, action_box_height, action2_x, action_y); //other action box
+
+    draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
+
+    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
+    print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
+    print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
+    updateLife();
+    set_cursor_position(0, action_y + action_box_height + 4);
+}
+
+void idle(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 17;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {R"(                                                                                                                                         
+    |                                         &&&&&                   
+    |                                       &&&&&&&&&                   
+    |                                      &&&&&&&&&&$                   
+    |                                       &&&&&&&&                   
+    |                                 .$&&&&&&&&&&&&&&&&&:               
+    |                                x&&&&&&&&&&&&&&&&&&&&;              
+    |                               X&&&&&&&&&&&&&&&&&&&&&X              
+    |               
+    |                             :X$$$&&&&&&&&&&&&&&&&&&&&&&&$X;        
+    |                        .X&&&&&X:.                     .:X&&&&&X:   
+    |                   x&&X.           +$&&&&&&&&&&&&&&              .X&
+    |                   $:             X&&&&&&&&&&&&&&&x                 
+    |                                :&&&$&&&&&&&;:.                     
+    |                                ;&&+    ...                         )"  
+                                        
+                                                                                   
+        }
+    };
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+        }
+    }
+}
+
+void buarel(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 17;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {R"(                              
+    |                                       +X$$&&&$$X+.        
+    |                                   ..:x&&&X:::+&&&x.       
+    |                                 :$&&&&&&$     +&&&&&&$:   
+    |                                +&&&X$&&&$     $&&&&&&&&;  
+    |                              .+&X.   .X&&&$xX&&&$:   :$&; 
+    |                              ;&&+     X&&&&&&&&&X     +&$:
+    |                              +&&&+:::x&&&&&&&&&&$+. .+&&&;
+    |                              .+&&&&&&&&&&&;.x&&&&&&&&&&&+ 
+    |                              :$&&&XX$&&&&&X+$&&&&&&$&&&&+.
+    |                              +&&X.   :$&&&&&&&&&X:   ;$&&;
+    |                              :$&;     X&&&&&&&&&+    .X&X.
+    |                               ;&&;  .X&&&x..;&&&$:   ;&$: 
+    |                                :$&&&&&&&:     &&&&&&&&X:  
+    |                                  +$$$&&&+    .&&&&&&$+    
+    |                                      ;&&&$++X&&&X.        
+    |                                       :;+xXXXx+;.         )"  
+                                        
+                                                                                   
+        }
+    };
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+        }
+    }
+}
+
+// ================================================================================================================================shot self animation=====================================
+void playAnimationShotSelf(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 16;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {R"(                                        
+                                               ....                 
+                                              .#**%:                
+                                              =#@@#+                
+                                              =%#@@*                
+                                              .+@@%-                
+                                           .+*@@@@@*+:.             
+                                          -%@@%%@%%@**=-            
+                                          #%#@@@@@@%@%%#            
+                                          %%%@#%%@#%#@@+            
+                                          *%@@*#@%+#%%%#            
+                                          +#@%##@#%%#@@%            
+                            -------------=*+=+**+=====*=------------)"                                           
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#*=%:                
+                                              =#=*#*                
+                                              =@##:*                
+                                              :#@##:                
+                                            :+**+*%+-:.             
+                                          -@**+**#%*+*++            
+                                         .*%%#++*#%++*##:           
+                                        .=@%%*+**=#**+=#-           
+                                        -%@@%=%**@@%@+=*            
+                                        %@@#..###+%#%%@#            
+                            -----------=#*==-+**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#*=%:                
+                                              =#=*#*                
+                                              +@##%*                
+                                              .#%%%-                
+                                           -**%@@@@++:.             
+                                          =%%@@@@%@@*#=-            
+                                         -#@@%%+#%@#%@@+            
+                                        -*@@#@*+*@@%%+@#:           
+                                       .*%%@#:**#%##-*+%            
+                                       +%#@- .%#@##**@@%            
+                            ----------=***=--+**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#**%:                
+                                              =#@@#+                
+                                              =%#@@*                
+                                              .+@@%-                
+                                           .+*@@@@@*+:.             
+                                         .-##@%%@%%@**=-            
+                                        -#@@%@@@@@@%@%%#            
+                                      .+@%@%#*#%%@#%#@@+            
+                                    .=@@@*.  =*#@%+#%%%#            
+                                   .%@@+     =##@#%%#@@%            
+                            -------***+------=**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#*=%:                
+                                              =#=*#*                
+                                              =@##:*                
+                                  *:          :#@##:                
+                                  .##:      :#**+*%+-:.             
+                                   *@%- .:=%%#***#%*+*++            
+                                   -%*#=+*+%##++*#%++*##:           
+                                    .+##@**%*++**=#**+=#-           
+                                      -#+=-  =%**@@%@+=*            
+                                             .###+%#%%@#            
+                            -----------------+**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                          .:- .#*=%:                
+                                         :%%. =#=*#*                
+                                        +@%.  +@##%*                
+                                      -%@%+   .#%%%-                
+                                    :#@@+. .+*%@@@@++:.             
+                                   .%@%*+*#*+@@@@%@@*#=-            
+                                   :****+#+++%@+#%@#%@@+            
+                                             =-+*@@%%+@#:           
+                                             .**#%##-*+%            
+                                             .%#@##**@@%            
+                            -----------------+**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#**%:                
+                                          :=**##@@#+                
+                                        .*@@+.=%#@@*                
+                                      -%@%#:. .+@@%-                
+                                     *%#%*=-+*@@@@@*+:.             
+                                     -#%*%*#*%%%@%%@**=-            
+                                      .-++*##%@@@@@%@%%#            
+                                           .:+#%%@#%#@@+            
+                                             =*#@%+#%%%#            
+                                             =##@#%%#@@%            
+                            -----------------=**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#**%:                
+                                          :=**##@@#+                
+                                        .*@@+.=%#@@*                
+                                      -%@%#:. .+@@%-                
+                                     *%#%*=-+*@@@@@*+:.             
+                                     -#%*%*#*%%%@%%@**=-            
+                                      .-++*##%@@@@@%@%%#            
+                                           .:+#%%@#%#@@+            
+                                             =*#@%+#%%%#            
+                                             =##@#%%#@@%            
+                            -----------------=**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#**%:                
+                                          :=**##@@#+                
+                                        .*@@+.=%#@@*                
+                                      -%@%#:. .+@@%-                
+                                     *%#%*=-+*@@@@@*+:.             
+                                     -#%*%*#*%%%@%%@**=-            
+                                      .-++*##%@@@@@%@%%#            
+                                           .:+#%%@#%#@@+            
+                                             =*#@%+#%%%#            
+                                             =##@#%%#@@%            
+                            -----------------=**+=====*=------------)"
+        },              
+        {R"(                ████████████████████████████████████████
+                            █████████████████████▓██████████████████
+                            ██████████████████▓▓▓███████████████████
+                            ██████████████████▓░░▓▓█████████████████
+                            ██████████████████▓▒▓▓██████████████████
+                            ███████████████████▒█▓██████████████████
+                            ███████████████████▓▓███████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████)"
+        },              
+        {R"(                ████████████████████████████████████████
+                            ██████████████████▓▓▓███████████████████
+                            ██████████████████▓█████████████████
+                            ██████████████████▓▒▓▓██████████████████
+                            ███████████████████▒█████████████████
+                            ███████████████████▓▓███████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            █████████████████████▓██████████████████
+                            ████████████████████████████████████████)"
+        },              
+        {R"(                ████████████████████████████████████████
+                            ████████████████████████████████████
+                            ███████████████████████████████████
+                            ██████████████████▓▓██████████████████
+                            ███████████████████████████████████
+                            █████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            ████████████████████████████████████████
+                            █████████████████████████████████████
+                            ████████████████████████████████████████)"
+        }
+    };
+
+    // loops * frames
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+        }
+    }
+    // after animation, clear the animation area
+    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
+
+    draw_box(box_width, box_height, box_x, box_y); //description box
+
+    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); //highlighted box
+
+    draw_box(action_box_width, action_box_height, action2_x, action_y); //other action box
+
+    draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
+
+    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
+    print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
+    print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
+    updateLife();
+    set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes   
+}
+// ================================================================================================================================shot self blank antimation=====================================
+void playAnimationShotSelfblank(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 16;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {R"(                                        
+                                               ....                 
+                                              .#**%:                
+                                              =#@@#+                
+                                              =%#@@*                
+                                              .+@@%-                
+                                           .+*@@@@@*+:.             
+                                          -%@@%%@%%@**=-            
+                                          #%#@@@@@@%@%%#            
+                                          %%%@#%%@#%#@@+            
+                                          *%@@*#@%+#%%%#            
+                                          +#@%##@#%%#@@%            
+                            -------------=*+=+**+=====*=------------)"                                           
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#*=%:                
+                                              =#=*#*                
+                                              =@##:*                
+                                              :#@##:                
+                                            :+**+*%+-:.             
+                                          -@**+**#%*+*++            
+                                         .*%%#++*#%++*##:           
+                                        .=@%%*+**=#**+=#-           
+                                        -%@@%=%**@@%@+=*            
+                                        %@@#..###+%#%%@#            
+                            -----------=#*==-+**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#*=%:                
+                                              =#=*#*                
+                                              +@##%*                
+                                              .#%%%-                
+                                           -**%@@@@++:.             
+                                          =%%@@@@%@@*#=-            
+                                         -#@@%%+#%@#%@@+            
+                                        -*@@#@*+*@@%%+@#:           
+                                       .*%%@#:**#%##-*+%            
+                                       +%#@- .%#@##**@@%            
+                            ----------=***=--+**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#**%:                
+                                              =#@@#+                
+                                              =%#@@*                
+                                              .+@@%-                
+                                           .+*@@@@@*+:.             
+                                         .-##@%%@%%@**=-            
+                                        -#@@%@@@@@@%@%%#            
+                                      .+@%@%#*#%%@#%#@@+            
+                                    .=@@@*.  =*#@%+#%%%#            
+                                   .%@@+     =##@#%%#@@%            
+                            -------***+------=**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#*=%:                
+                                              =#=*#*                
+                                              =@##:*                
+                                  *:          :#@##:                
+                                  .##:      :#**+*%+-:.             
+                                   *@%- .:=%%#***#%*+*++            
+                                   -%*#=+*+%##++*#%++*##:           
+                                    .+##@**%*++**=#**+=#-           
+                                      -#+=-  =%**@@%@+=*            
+                                             .###+%#%%@#            
+                            -----------------+**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                          .:- .#*=%:                
+                                         :%%. =#=*#*                
+                                        +@%.  +@##%*                
+                                      -%@%+   .#%%%-                
+                                    :#@@+. .+*%@@@@++:.             
+                                   .%@%*+*#*+@@@@%@@*#=-            
+                                   :****+#+++%@+#%@#%@@+            
+                                             =-+*@@%%+@#:           
+                                             .**#%##-*+%            
+                                             .%#@##**@@%            
+                            -----------------+**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#**%:                
+                                          :=**##@@#+                
+                                        .*@@+.=%#@@*                
+                                      -%@%#:. .+@@%-                
+                                     *%#%*=-+*@@@@@*+:.             
+                                     -#%*%*#*%%%@%%@**=-            
+                                      .-++*##%@@@@@%@%%#            
+                                           .:+#%%@#%#@@+            
+                                             =*#@%+#%%%#            
+                                             =##@#%%#@@%            
+                            -----------------=**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#**%:                
+                                          :=**##@@#+                
+                                        .*@@+.=%#@@*                
+                                      -%@%#:. .+@@%-                
+                                     *%#%*=-+*@@@@@*+:.             
+                                     -#%*%*#*%%%@%%@**=-            
+                                      .-++*##%@@@@@%@%%#            
+                                           .:+#%%@#%#@@+            
+                                             =*#@%+#%%%#            
+                                             =##@#%%#@@%            
+                            -----------------=**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#**%:                
+                                          :=**##@@#+                
+                                        .*@@+.=%#@@*                
+                                      -%@%#:. .+@@%-                
+                                     *%#%*=-+*@@@@@*+:.             
+                                     -#%*%*#*%%%@%%@**=-            
+                                      .-++*##%@@@@@%@%%#            
+                                           .:+#%%@#%#@@+            
+                                             =*#@%+#%%%#            
+                                             =##@#%%#@@%            
+                            -----------------=**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#*=%:                
+                                              =#=*#*                
+                                              =@##:*                
+                                  *:          :#@##:                
+                                  .##:      :#**+*%+-:.             
+                                   *@%- .:=%%#***#%*+*++            
+                                   -%*#=+*+%##++*#%++*##:           
+                                    .+##@**%*++**=#**+=#-           
+                                      -#+=-  =%**@@%@+=*            
+                                             .###+%#%%@#            
+                            -----------------+**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#**%:                
+                                              =#@@#+                
+                                              =%#@@*                
+                                              .+@@%-                
+                                           .+*@@@@@*+:.             
+                                         .-##@%%@%%@**=-            
+                                        -#@@%@@@@@@%@%%#            
+                                      .+@%@%#*#%%@#%#@@+            
+                                    .=@@@*.  =*#@%+#%%%#            
+                                   .%@@+     =##@#%%#@@%            
+                            -------***+------=**+=====*=------------)"
+        },              
+        {R"(                                                        
+                                               ....                 
+                                              .#*=%:                
+                                              =#=*#*                
+                                              +@##%*                
+                                              .#%%%-                
+                                           -**%@@@@++:.             
+                                          =%%@@@@%@@*#=-            
+                                         -#@@%%+#%@#%@@+            
+                                        -*@@#@*+*@@%%+@#:           
+                                       .*%%@#:**#%##-*+%            
+                                       +%#@- .%#@##**@@%            
+                            ----------=***=--+**+=====*=------------)"
+        },
+    };
+
+    // loops * frames
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+        }
+    }
+    // after animation, clear the animation area
+    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
+
+    draw_box(box_width, box_height, box_x, box_y); //description box
+
+    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); //highlighted box
+
+    draw_box(action_box_width, action_box_height, action2_x, action_y); //other action box
+
+    draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
+
+    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
+    print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
+    print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
+    updateLife();
+    set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes
+}
+// ================================================================================================================================you shot enemy=====================================
+
+// ================================================================================================================================enemy shot you=====================================
+
+// ================================================================================================================================heal=====================================
+
+// ================================================================================================================================magnifying=====================================
+
+// ================================================================================================================================double damage=====================================
+
+// ================================================================================================================================handcuffs=====================================
+
+// ================================================================================================================================inspect=====================================
+void playAnimationInspect(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 16;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    resetscreen();
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {R"(                                        
+    |                                                       :xXXx:       
+    |                                                     :XX:.;;+$:     
+    |                              :::::.                 $+   :: ++     
+    |                              ;    ::::::;;;;;:+X;   X+      x+     
+    |                              ::::::::::+:...::;;+:  .xx+;;;X+      
+    |                                         ;;;+;:;;:.:     ::$++:     
+    |                                          .:;.; ;  ::      .; :;    
+    |                                                ;   ;       :; .+   
+    |                                                ;;;;:        :;++   
+    |                                                              ...   )"  
+                                             
+                                                                                        
+        },         
+                            
+        {R"(                                                
+    |                              :::::.                                
+    |                              ;    ::::::;;;;;:+X;    :xXx+xx:      
+    |                              ::::::::::+:...::;;+:  ;$;  +;:$;     
+    |                                         ;;;+;:;;:.: $;      ++     
+    |                                          .:;.; ;  ::xx.    .X;     
+    |                                                ;   ; :$&$$$$:      
+    |                                                ;;;;:    . x.:+     
+    |                                                            + .+    
+    |                                                            .; :+   
+    |                                                             .;++   )"
+        },                      
+        {R"(                                                
+    |                              :::::.                                
+    |                              ;    ::::::;;;;;:+X;                  
+    |                              ::::::::::+:...::;;+:                 
+    |                                         ;;;+;:;;:.:  :x$$XXx:      
+    |                                          .:;.; ;  ::+$;  +;.$;     
+    |                                                ;   ;$;      ++     
+    |                                                ;;;;:+X     .X;     
+    |                                                      :xX$X$$;      
+    |                                                           +::;     
+    |                                                            + .;.   )"
+        },                      
+        {R"(                                                
+    |                              :::::.                                
+    |                              ;    ::::::;;;;;:+X;                  
+    |                              ::::::::::+:...::;;+:                 
+    |                                         ;;;+;:;;:.:                
+    |                                          .:;.; ;  ::               
+    |                                                ;   ;   ....        
+    |                                                ;;;;: X$+::;$X      
+    |                                                     XX.  ;; x+     
+    |                                                     $;      ++     
+    |                                                     :X;::.:+x.     )"
+        },                      
+        {R"(                                                
+    |                              :::::.                                
+    |                              ;    ::::::;;;;;:+X;                  
+    |                              ::::::::::+:...::;;+:                 
+    |                                         ;;;+;:;;:.:                
+    |                                          .:;.; ;  ::               
+    |                                                ;   ;               
+    |                                                ;;;;:               
+    |          
+    |          
+    |                                                                    )"
+        },                      
+        {R"(                                                
+    |                              :::::.                                
+    |                              ;    ::::::;;;;;:+X;                  
+    |                              ::::::::::+:...::;;+:                 
+    |                                         ;;;+;:;;:.:                
+    |                                          .:;.; ;  ::          .:;+;
+    |                                                ;   ;        :+++.  
+    |                                                ;;;;:       ++:     
+    |                                                          .++.      
+    |                                                          ;;        
+    |                                                          ;;        )"
+        },                      
+        {R"(                                                
+    |                              :::::.                  .;;;;;;;;;.   
+    |                              ;    ::::::;;;;;:+X;  ;++:::   ::;+;: 
+    |                              ::::::::::+:...::;;+;++:           :++
+    |                                         ;;;+;:;;;+x:              +
+    |                                          .:;.; ;++ ;               
+    |                                                ;;; .;              
+    |                                                ;+;::;              
+    |                                                 ;+:.              :
+    |                                                  ++:             :+
+    |                                                   ;+;:         :;+;)"
+        },                      
+        {R"(                                                
+    |                                                 ;;;+;;;;;;         
+    |                              :::::.          :;x;+:    .:;+;:      
+    |                              ;    ::::::;;;;xx+$$:         ;+;     
+    |                              ::::::::::+:..;x;;;++;         .+;    
+    |                                         ;;;+; ::+:::         :;:   
+    |                                          .++:+x;   :;         +;   
+    |                                           :;+: .;   ;        .;:   
+    |                                            ++  .;   .;       +++:  
+    |                                            .++ :;;;;;;      ++: .::
+    |                                             .;+;:        :;+;:::;. 
+    |                                               .:;+;;:::;+;;.     :;)"
+        },                      
+        {R"(                                                
+    |                                           .;;;;;+;;.               
+    |                                        .+++:......:+++             
+    |                                       ;+;.          .;+;           
+    |                              :::::.  ;x;:::::::::: :. :+;          
+    |                              ;    ::;+:  ;:::::::X&;   :;.         
+    |                              :::::::++;;;;    :;;;++;  .+:         
+    |                                     :+. ;;;;++;.::+::: :+:         
+    |                                     .++   .+:$:+x;.  :;++:..       
+    |                                      :++   :+;;;  ;   x+.  :+;     
+    |                                       .++;        + ;++..+:   ..;;.
+    |                                         .;++;;:::;++;.    .:;;.   .
+    |                                            .::::::.           :::;.
+    |                                                                   :)"
+        },                      
+        {R"(                                                
+    |                                           .;;;;;+;;.               
+    |                                        .+++:......:+++             
+    |                                       ;+;.          .;+;           
+    |                              :::::.  ;x;:::::::::: :. :+;          
+    |                              ;    ::;+:  ;:::::::X&;   :;.         
+    |                              :::::::++;;;;    :;;;++;  .+:         
+    |                                     :+. ;;;;++;.::+::: :+:         
+    |                                     .++   .+:$:+x;.  :;++:..       
+    |                                      :++   :+;;;  ;   x+.  :+;     
+    |                                       .++;        + ;++..+:   ..;;.
+    |                                         .;++;;:::;++;.    .:;;.   .
+    |                                            .::::::.           :::;.
+    |                                                                   :)"
+        },                      
+        {R"(                                                
+    |                                           .;;;;;+;;.               
+    |                                        .+++:......:+++             
+    |                                       ;+;.          .;+;           
+    |                              :::::.  ;x;:::::::::: :. :+;          
+    |                              ;    ::;+:  ;:::::::X&;   :;.         
+    |                              :::::::++;;;;    :;;;++;  .+:         
+    |                                     :+. ;;;;++;.::+::: :+:         
+    |                                     .++   .+:$:+x;.  :;++:..       
+    |                                      :++   :+;;;  ;   x+.  :+;     
+    |                                       .++;        + ;++..+:   ..;;.
+    |                                         .;++;;:::;++;.    .:;;.   .
+    |                                            .::::::.           :::;.
+    |                                                                   :)"
+        },                      
+        {R"(                                                
+    |                                           .;;;;;+;;.               
+    |                                        .+++:......:+++             
+    |                                       ;+;.          .;+;           
+    |                              :::::.  ;x;:::::::::: :. :+;          
+    |                              ;    ::;+:  ;:::::::X&;   :;.         
+    |                              :::::::++;;;;    :;;;++;  .+:         
+    |                                     :+. ;;;;++;.::+::: :+:         
+    |                                     .++   .+:$:+x;.  :;++:..       
+    |                                      :++   :+;;;  ;   x+.  :+;     
+    |                                       .++;        + ;++..+:   ..;;.
+    |                                         .;++;;:::;++;.    .:;;.   .
+    |                                            .::::::.           :::;.
+    |                                                                   :)"
+        },
+    };
+    // loops * frames
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+        }
+    }
+    // after animation, clear the animation area
+    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
+
+    draw_box(box_width, box_height, box_x, box_y); //description box
+
+    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); //highlighted box
+
+    draw_box(action_box_width, action_box_height, action2_x, action_y); //other action box
+
+    draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
+
+    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
+    print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
+    print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
+    updateLife();
+    set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes
+}
+
+void shootSelf(int which, bool isDoubleDamage){
+    std::string message = "";
+    if(which == 0 && bulletNow == 1 && playerDD){
+        player_life -= 2;
+        whoseTurn = 1;
+        message = "You shot yourself using Double Damage, causing your health to drop by 2.";
+        playAnimationShotSelf(100, 1);
+    } else if(which == 0 && bulletNow == 1){
+        player_life -= 1;
+        whoseTurn = 1;
+        message = "You shot yourself with a live bullet";
+        playAnimationShotSelf(100, 1);
+    }
+    else if(which == 0 && bulletNow == 0){
+        message = "You shot yourself, but luckily it was a blank";
+        playAnimationShotSelfblank(100, 1);
+    }
+    else if(which == 1 && bulletNow == 1){
+        enemy_life -= 1;
+        whoseTurn = 0;
+        message = "The enemy shot himself with a live bullet";
+        playAnimationShotSelf(100, 1);
+    }
+    else if(which == 1 && bulletNow == 0){
+        message = "The enemy shot himself, but it was a blank";
+        playAnimationShotSelfblank(100, 1);
+    }
+    clearBox();
+    print_in_box_animated(message, box_x, box_y, box_width, box_height, 40);
+    updateLife();
+    std::this_thread::sleep_for(std::chrono::seconds(3)); // Wait for the player to see
+}
 
 void user_input(){
     bool noMessage = true;
@@ -538,6 +1228,8 @@ int main(){
 
     draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
 
+    idle(100,1);
+
     print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
     print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
     print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
@@ -584,8 +1276,13 @@ int main(){
         clearBox();
         print_in_box_animated("Spinning the barrel", box_x, box_y, box_width, box_height, 40);
         loading_dots();
+        playAnimationInspect(300,1);
+        buarel(100,1);
+        resetscreen();
         displayBarrel();
         std::this_thread::sleep_for(std::chrono::seconds(6)); // Wait for the player to see
+        resetscreen();
+        idle(100,1);
         print_in_box_animated("                                       ", box_x, box_y, box_width, box_height, 10);
         print_in_box_animated("                            ", box_x, box_y + 1, box_width, box_height, 10);
         print_in_box_animated("Getting 3 random items", box_x, box_y, box_width, box_height, 40);
@@ -627,6 +1324,7 @@ int main(){
                     user_input();
                 } else{
                     clearBox();
+                    idle(100,1);
                     print_in_box_animated("It's enemy's turn", box_x, box_y, box_width, box_height, 40);
                     std::this_thread::sleep_for(std::chrono::seconds(2));
                     int rand_item = rand() % 3;
