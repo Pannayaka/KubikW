@@ -72,6 +72,90 @@ void draw_box_alt(int width, int height, int x_offset = 0, int y_offset = 0) {
     std::cout << "+" << std::string(width - 2, '<') << "+" << std::endl;
 }
 
+// animation function: prints inside the large box above controls
+void playAnimationHeal(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 16;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {  
+                                                            
+"                                                            "
+"                                                            "
+"                           .-%=*#@=.                        "
+"                           .%%@@@@=:                        "
+"                     :*@@@@@@%@@@%@-                        "
+"                    *@%@*=.:@%%#@@@-                        "
+"                .:#%@@#*.  .+@@#@@@-                        "
+"               -%@@%##-.    .*@@@%#.                        "
+"             :%%@@%@*:...:+@@%#%%@#*:.                      "
+"             .%%*###+--%#@@%%#@@%#@@#*%=:                   "
+"              -%%@*#*%%+**@%%%@#%#%@#*+:+=                  "
+"               ..-+%%%*%%%@@@@@%@@@%@@@@##                  "
+"                     .-++*%%@@@@@%##%#%@%#                  "
+"                          :*@+%@*%@*%#@@#-                  "
+"                          +*+%@@%%=%%@#%#%                  "
+"                          *=*%@#+=*#@@@@@+                  "
+"                          ++**%@@@%@##@@*%                  "
+"--------------------------#@@%+*=+==+=#@##------------------"
+"                                                            "
+"                                                            "
+"                                                            "
+"                                                            "
+                                                       
+        },
+        {
+            "      .----.        ",
+            "     /      \\       ",
+            "    | ( •_•)>⌐■-■|  ",
+            "     \\  --  /       ",
+            "      `----'        "
+        },
+        {
+            "      .----.        ",
+            "     /      \\       ",
+            "    |  (•_•)  |     ",
+            "     \\  |\\  /       ",
+            "      `----'        "
+        },
+        {
+            "      .----.        ",
+            "     /      \\       ",
+            "    |  (•_•)  |     ",
+            "     \\  /|\\ /       ",
+            "      `----'        "
+        }
+    };
+
+    // loops * frames
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+        }
+    }
+    // after animation, clear the animation area
+    for(int i = 0; i < 6; i++){
+        set_cursor_position(anim_start_x, anim_start_y + i);
+        std::cout << std::string(anim_width, ' ');
+    }
+    set_cursor_position(0, action_y + action_box_height + 4);
+}
 
 void loading_dots(){
     for(int i = 0; i < 5; i++){
@@ -202,6 +286,7 @@ void shoot(int which, bool isDoubleDamage){
     else if(which == 0 && bulletNow == 0){
         whoseTurn = 1;
         message = "You shot him with a blank";
+        playAnimationHeal(1000, 5);
     }
     else if(which == 1 && bulletNow == 1){
         player_life -= 1;
