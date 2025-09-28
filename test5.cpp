@@ -8,9 +8,13 @@
 #include <thread>
 #include <chrono>
 #include <algorithm>
+#include <cstdlib>
 
+void blipSound() {
+    Beep(800, 30); 
+}
 
-// --- Game State Variables ---
+// =====Game Variables ====
 int player_life = 5, enemy_life = 5;
 int roundIndex = 1;
 bool playAgain = true, restartGame = false;
@@ -21,7 +25,7 @@ std::vector<int> barrel(6, 0), randBarrel(6, 0);
 
 
 
-// --- UI Layout Variables ---
+// ==== UI====
 int box_x = 6, box_y = 20, box_width = 90, box_height = 9;
 int action_box_width = 21, action_box_height = 3;
 int action_y = box_y + box_height;
@@ -29,7 +33,7 @@ int action1_x = 24, action2_x = action1_x + action_box_width + 2, action3_x = ac
     
     
 
-// --- Random Generators ---
+// =====Random Generators====
 std::random_device rd;
 std::mt19937 g(rd());
 std::random_device dev;
@@ -38,9 +42,17 @@ std::uniform_int_distribution<std::mt19937::result_type> dist6(0,1);
 
 
 
-// --- Utility Functions ---
+// ===== Utility Functions ====
+void setTextColor(int color) {
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+}
+
 void clearBox();
 
+
+void clearScreen() {
+    std::cout << "\033[2J\033[1;1H";
+}
 
 
 void set_cursor_position(int x, int y) {
@@ -58,18 +70,25 @@ void draw_box(int width, int height, int x_offset = 0, int y_offset = 0) {
     }
     set_cursor_position(x_offset, y_offset + height - 1);
     std::cout << "+" << std::string(width - 2, '-') << "+" << std::endl;
+    
 }
 
 
 void draw_box_alt(int width, int height, int x_offset = 0, int y_offset = 0) {
+    setTextColor(FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY); // purple
+
     set_cursor_position(x_offset, y_offset);
     std::cout << "+" << std::string(width - 2, '>') << "+" << std::endl;
+
     for (int i = 0; i < height - 2; ++i) {
         set_cursor_position(x_offset, y_offset + 1 + i);
         std::cout << "|" << std::string(width - 2, ' ') << "|" << std::endl;
     }
+
     set_cursor_position(x_offset, y_offset + height - 1);
     std::cout << "+" << std::string(width - 2, '<') << "+" << std::endl;
+
+    setTextColor(7);
 }
 
 
@@ -77,6 +96,7 @@ void loading_dots(){
     for(int i = 0; i < 5; i++){
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
         std::cout << ".";
+        blipSound();
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
@@ -86,30 +106,41 @@ void print_in_box(const std::string& message, int box_x, int box_y, int box_widt
 
 
 void print_in_box_animated(const std::string& message, int box_x, int box_y, int box_width, int box_height, int delay_ms);
-void updateLife(){
+void updateLife() {
     print_in_box("       ", box_x - 36, box_y + 5, box_width, box_height);
     print_in_box("         ", box_x - 36, box_y + 6, box_width, box_height);
     print_in_box("      ", box_x - 36, box_y + 7, box_width, box_height);
     print_in_box("         ", box_x - 36, box_y + 8, box_width, box_height);
+
     print_in_box("Your life:\n    |  ", box_x - 34, box_y + 5, box_width, box_height);
-    for(int i = 0; i < player_life; i++) std::cout << "# ";
+
+    
+    setTextColor(FOREGROUND_GREEN);
+    for (int i = 0; i < player_life; i++) std::cout << "❤ ";
+    setTextColor(7); 
+
     print_in_box("Enemy's life:\n    |  ", box_x - 33, box_y + 7, box_width, box_height);
-    for(int i = 0; i < enemy_life; i++) std::cout << "# ";
+
+    
+    setTextColor(FOREGROUND_GREEN);
+    for (int i = 0; i < enemy_life; i++) std::cout << "❤ ";
+    setTextColor(7); 
+
     set_cursor_position(0, action_y + action_box_height + 4);
 }
 
 
 void print_in_box(const std::string& message, int box_x, int box_y, int box_width, int box_height) {
-    int text_x = box_x + (box_width - 2 - message.length()) / 2 + 1; // Center text horizontally
-    int text_y = box_y + (box_height - 2) / 2 + 1; // Center text vertically
+    int text_x = box_x + (box_width - 2 - message.length()) / 2 + 1; 
+    int text_y = box_y + (box_height - 2) / 2 + 1; 
     set_cursor_position(text_x, text_y);
     std::cout << message << std::flush;
 }
 
 
 void print_in_box_animated(const std::string& message, int box_x, int box_y, int box_width, int box_height, int delay_ms = 40) {
-    int text_x = box_x + (box_width - 2 - message.length()) / 2 + 1; // Center text horizontally
-    int text_y = box_y + (box_height - 2) / 2 + 1; // Center text vertically
+    int text_x = box_x + (box_width - 2 - message.length()) / 2 + 1; 
+    int text_y = box_y + (box_height - 2) / 2 + 1; 
     set_cursor_position(text_x, text_y);
     for (char c : message) {
         std::cout << c << std::flush;
@@ -141,7 +172,7 @@ void displayBarrel(){
 void give_random_items() {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dist(0, 3); // 4 item types
+    std::uniform_int_distribution<> dist(0, 3); 
     int healC = 0;
     int magniGlassC = 0;
     int doubleDamageC = 0;
@@ -183,42 +214,9 @@ void give_random_items() {
 }
 
 
-void shoot(int which, bool isDoubleDamage){
-    std::string message = "";
-    if(which == 1 && bulletNow == 1 && enemyDD){
-        player_life -= 2;
-        whoseTurn = 0;
-        enemyDD = false;
-        message = "You were shot by a double damage bullet. Your health drops by 2";
-    }else if(which == 0 && bulletNow == 1 && playerDD){
-        enemy_life -= 2;
-        whoseTurn = 1;
-        message = "You shot him using Double Damage, causing his health to drop by 2.";
-    } else if(which == 0 && bulletNow == 1){
-        enemy_life -= 1;
-        whoseTurn = 1;
-        message = "You shot him with a live bullet";
-    }
-    else if(which == 0 && bulletNow == 0){
-        whoseTurn = 1;
-        message = "You shot him with a blank";
-    }
-    else if(which == 1 && bulletNow == 1){
-        player_life -= 1;
-        whoseTurn = 0;
-        message = "He shot you with a live bullet";
-    }
-    else if(which == 1 && bulletNow == 0){
-        whoseTurn = 0;
-        message = "He shot you with a blank";
-    }
-    clearBox();
-    print_in_box_animated(message, box_x, box_y, box_width, box_height, 40);
-    updateLife();
-    std::this_thread::sleep_for(std::chrono::seconds(3)); // Wait for the player to see
-}
 
-void clearBox(){ // clear the box conveniently, my favourite :)
+
+void clearBox(){ 
     print_in_box("                                                                        ", box_x, box_y-2, box_width, box_height);
     print_in_box("                                                                        ", box_x, box_y-1, box_width, box_height);
     print_in_box("                                                                        ", box_x, box_y, box_width, box_height);
@@ -227,17 +225,17 @@ void clearBox(){ // clear the box conveniently, my favourite :)
 }
 
 void resetscreen(){
-    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
+    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); 
 
-    draw_box(box_width, box_height, box_x, box_y); //description box
+    draw_box(box_width, box_height, box_x, box_y); 
 
-    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); //highlighted box
+    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); 
 
-    draw_box(action_box_width, action_box_height, action2_x, action_y); //other action box
+    draw_box(action_box_width, action_box_height, action2_x, action_y); 
 
-    draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
+    draw_box(action_box_width, action_box_height, action3_x, action_y); 
 
-    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
+    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  
     print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
     print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
     updateLife();
@@ -250,25 +248,50 @@ void idle(int ms_per_frame, int loops){
     int anim_start_x = box_x;                // left column inside the big box
     int anim_start_y = box_y - 17;           // a few lines below the big box top border
     int anim_width = box_width;              // max width to clear
+    resetscreen();
     // frames (multi-line)
     std::vector<std::vector<std::string>> frames = {
-        {R"(                                                                                                                                         
-    |                                         &&&&&                   
-    |                                       &&&&&&&&&                   
-    |                                      &&&&&&&&&&$                   
-    |                                       &&&&&&&&                   
-    |                                 .$&&&&&&&&&&&&&&&&&:               
-    |                                x&&&&&&&&&&&&&&&&&&&&;              
-    |                               X&&&&&&&&&&&&&&&&&&&&&X              
-    |               
-    |                             :X$$$&&&&&&&&&&&&&&&&&&&&&&&$X;        
-    |                        .X&&&&&X:.                     .:X&&&&&X:   
-    |                   x&&X.           +$&&&&&&&&&&&&&&              .X&
-    |                   $:             X&&&&&&&&&&&&&&&x                 
-    |                                :&&&$&&&&&&&;:.                     
-    |                                ;&&+    ...                         )"  
-                                        
-                                                                                   
+        {R"( |                                      
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                         -+**+*%+-:.             
+    |                                       :%#*+**#%*+*++            
+    |                                       =+#*++*#%++*##:           
+    |                                       +#%++**=#**+=#-           
+    |                                       +%%@%**@@%@+=*            
+    |                                       +#@%###+%#%%@#            
+    |                         -------------=*+=+**+=====*=------------)"                                                                      
+        },   
+        {R"( |                                            
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           +@##%*                
+    |                                           .#%%%-                
+    |                                        .+*%@@@@++:.             
+    |                                       -%%@@@@%@@*#=-            
+    |                                       *%%%#+#%@#%@@+            
+    |                                       ###*:+*@@%%+@#:           
+    |                                       =%%==*#%##-*+%            
+    |                                       +#@%##@##**@@%            
+    |                         -------------=*+=+**+=====*=------------)"                                                                      
+        },   
+        {R"( |                                             
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@@@@*+:.             
+    |                                       -%@@%%@%%@**=-            
+    |                                       #%#@@@@@@%@%%#            
+    |                                       %%%@#%%@#%#@@+            
+    |                                       *%@@*#@%+#%%%#            
+    |                                       +#@%##@#%%#@@%            
+    |                         -------------=*+=+**+=====*=------------)"                                                                      
         }
     };
     for(int lp = 0; lp < loops; lp++){
@@ -291,15 +314,67 @@ void idle(int ms_per_frame, int loops){
     }
 }
 
+void INTRO(int ms_per_frame, int loops){
+    int anim_start_x = box_x;                
+    int anim_start_y = box_y - 17;           
+    int anim_width = box_width;              
+    resetscreen();
+    setTextColor(FOREGROUND_RED);
+    
+    std::vector<std::vector<std::string>> frames = {
+        {R"(                               
+                           _,.----.  ,--.-.,-.           ,-,--.  ,--.-,,-,--,   _,.---._    ,--.--------.  
+    _..---.  .--.-. .-.-..' .' -   \/==/- |\  \        ,-.'-  _\/==/  /|=|  | ,-.' , -  `. /==/,  -   , -\ 
+  .' .'.-. \/==/ -|/=/  /==/  ,  ,-'|==|_ `/_ /       /==/_ ,_.'|==|_ ||=|, |/==/_,  ,  - \\==\.-.  - ,-./ 
+ /==/- '=' /|==| ,||=| -|==|-   |  .|==| ,   /        \==\  \   |==| ,|/=| _|==|   .=.     |`--`\==\- \    
+ |==|-,   ' |==|- | =/  |==|_   `-' \==|-  .|          \==\ -\  |==|- `-' _ |==|_ : ;=:  - |     \==\_ \   
+ |==|  .=. \|==|,  \/ - |==|   _  , |==| _ , \         _\==\ ,\ |==|  _     |==| , '='     |     |==|- |   
+ /==/- '=' ,|==|-   ,   |==\.       /==/  '\  |       /==/\/ _ ||==|   .-. ,\\==\ -    ,_ /      |==|, |   
+|==|   -   //==/ , _  .' `-.`.___.-'\==\ /\=\.'       \==\ - , //==/, //=/  | '.='. -   .'       /==/ -/   
+`-._`.___,' `--`..---'               `--`              `--`---' `--`-' `-`--`   `--`--''         `--`--`   
+                _,.---._                              ,----.  ,--.--------. ,--.--------.    ,----.        
+  .-.,.---.   ,-.' , -  `.  .--.-. .-.-.  _.-.     ,-.--` , \/==/,  -   , -Y==/,  -   , -\,-.--` , \       
+ /==/  `   \ /==/_,  ,  - \/==/ -|/=/  |.-,.'|    |==|-  _.-`\==\.-.  - ,-.|==\.-.  - ,-./==|-  _.-`       
+|==|-, .=., |==|   .=.     |==| ,||=| -|==|, |    |==|   `.-. `--`\==\- \   `--`\==\- \  |==|   `.-.       
+|==|   '='  /==|_ : ;=:  - |==|- | =/  |==|- |   /==/_ ,    /      \==\_ \       \==\_ \/==/_ ,    /       
+|==|- ,   .'|==| , '='     |==|,  \/ - |==|, |   |==|    .-'       |==|- |       |==|- ||==|    .-'        
+|==|_  . ,'. \==\ -    ,_ /|==|-   ,   /==|- `-._|==|_  ,`-._      |==|, |       |==|, ||==|_  ,`-._       
+/==/  /\ ,  ) '.='. -   .' /==/ , _  .'/==/ - , ,/==/ ,     /      /==/ -/       /==/ -//==/ ,     /       
+`--`-`--`--'    `--`--''   `--`..---'  `--`-----'`--`-----``       `--`--`       `--`--``--`-----``        )"  
+                                        
+                                                                                   
+        }
+    };
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            
+            for(size_t line = 0; line < frames[f].size(); line++){
+                
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+        }
+    }
+}
+
 void buarel(int ms_per_frame, int loops){
     // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
     // choose a comfortable inner area inside that large box
     int anim_start_x = box_x;                // left column inside the big box
     int anim_start_y = box_y - 17;           // a few lines below the big box top border
     int anim_width = box_width;              // max width to clear
+    resetscreen();
     // frames (multi-line)
     std::vector<std::vector<std::string>> frames = {
-        {R"(                              
+        {R"( |                              
     |                                       +X$$&&&$$X+.        
     |                                   ..:x&&&X:::+&&&x.       
     |                                 :$&&&&&&$     +&&&&&&$:   
@@ -339,193 +414,281 @@ void buarel(int ms_per_frame, int loops){
         }
     }
 }
-
-// ================================================================================================================================shot self animation=====================================
-void playAnimationShotSelf(int ms_per_frame, int loops){
+//==================================player shoot sel================================================
+void playAnimationPlayerSSLive(int ms_per_frame, int loops){
     // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
     // choose a comfortable inner area inside that large box
     int anim_start_x = box_x;                // left column inside the big box
     int anim_start_y = box_y - 16;           // a few lines below the big box top border
     int anim_width = box_width;              // max width to clear
+    resetscreen();
     // frames (multi-line)
     std::vector<std::vector<std::string>> frames = {
-        {R"(                                        
-                                               ....                 
-                                              .#**%:                
-                                              =#@@#+                
-                                              =%#@@*                
-                                              .+@@%-                
-                                           .+*@@@@@*+:.             
-                                          -%@@%%@%%@**=-            
-                                          #%#@@@@@@%@%%#            
-                                          %%%@#%%@#%#@@+            
-                                          *%@@*#@%+#%%%#            
-                                          +#@%##@#%%#@@%            
-                            -------------=*+=+**+=====*=------------)"                                           
+        {R"( |                                        
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                          =#@@#+                
+    |                                          =%#@@*                
+    |                                          .+@@%-                
+    |                                       .+*@@@@@*+:.             
+    |                                      -%@@%%@%%@**=-            
+    |                                      #%#@@@@@@%@%%#            
+    |                                      %%%@#%%@#%#@@+            
+    |                                      *%@@*#@%+#%%%#            
+    |                                      +#@%##@#%%#@@%            
+    |                        -------------=*+=+**+=====*=------------)"                                           
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#*=%:                
-                                              =#=*#*                
-                                              =@##:*                
-                                              :#@##:                
-                                            :+**+*%+-:.             
-                                          -@**+**#%*+*++            
-                                         .*%%#++*#%++*##:           
-                                        .=@%%*+**=#**+=#-           
-                                        -%@@%=%**@@%@+=*            
-                                        %@@#..###+%#%%@#            
-                            -----------=#*==-+**+=====*=------------)"
+        {R"( |                                                       
+
+    |                                    ....                        
+    |                                   .**=%=                       
+    |                                   :%-#*%                       
+    |                                   :@##@#                       
+    |                                   .+#@%*                       
+    |                                 =*#@%@@*+:.                    
+    |                               :#%@@@@@%@#%=+                   
+    |                               =%%%%*+%@%%@@*-                  
+    |                               +%##-+*%@#@*%#=                  
+    |                               -##=+=*%%*+=%#:                  
+    |                               =+%%##%%%**%@%-                  
+    |                        -------**=+**+=====*==------.           )"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#*=%:                
-                                              =#=*#*                
-                                              +@##%*                
-                                              .#%%%-                
-                                           -**%@@@@++:.             
-                                          =%%@@@@%@@*#=-            
-                                         -#@@%%+#%@#%@@+            
-                                        -*@@#@*+*@@%%+@#:           
-                                       .*%%@#:**#%##-*+%            
-                                       +%#@- .%#@##**@@%            
-                            ----------=***=--+**+=====*=------------)"
+        {R"( |                                                         
+    |                                                                
+    |                           ....                                 
+    |                          .*#*@-                                
+    |                          :#@%@*                                
+    |                          .%@#@%                                
+    |                           -@@%*                                
+    |                        =*%@@@@%+:.                             
+    |                        @@%#@%#@#*=+                            
+    |                        #@@@@@@%@%@#-                           
+    |                        *@*%%@#%*%@%.                           
+    |                        %@#+@@**%%@%:                           
+    |                        %%##%#@#%%@%-                           
+    |                        =+**+=====*==-----------.               )"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#**%:                
-                                              =#@@#+                
-                                              =%#@@*                
-                                              .+@@%-                
-                                           .+*@@@@@*+:.             
-                                         .-##@%%@%%@**=-            
-                                        -#@@%@@@@@@%@%%#            
-                                      .+@%@%#*#%%@#%#@@+            
-                                    .=@@@*.  =*#@%+#%%%#            
-                                   .%@@+     =##@#%%#@@%            
-                            -------***+------=**+=====*=------------)"
+        {R"( |                                                       
+    |                                                                
+    |                        ..                                      
+    |                        @+.                                     
+    |                        @#.                                     
+    |                        @@.                                     
+    |                        %#.                                     
+    |                        @%+-:                                   
+    |                        %@%*++.                                 
+    |                        @@%%%#=                                 
+    |                        %%*%@%:                                 
+    |                        #+@%%%=                                 
+    |                        %#%%@%=                                 
+    |                        ====*+=----------:                      )"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#*=%:                
-                                              =#=*#*                
-                                              =@##:*                
-                                  *:          :#@##:                
-                                  .##:      :#**+*%+-:.             
-                                   *@%- .:=%%#***#%*+*++            
-                                   -%*#=+*+%##++*#%++*##:           
-                                    .+##@**%*++**=#**+=#-           
-                                      -#+=-  =%**@@%@+=*            
-                                             .###+%#%%@#            
-                            -----------------+**+=====*=------------)"
+        {R"( |                                                        
+    |                                                                
+    |                                                                
+    |                                                                
+    |                                                                
+    |                                                                
+    |                                                                
+    |                        :                                       
+    |                        ++.                                     
+    |                        @#=                                     
+    |                        @%.                                     
+    |                        %%-                                     
+    |                        @%=                                     
+    |                        *==----------:                          )"
         },              
-        {R"(                                                        
-                                               ....                 
-                                          .:- .#*=%:                
-                                         :%%. =#=*#*                
-                                        +@%.  +@##%*                
-                                      -%@%+   .#%%%-                
-                                    :#@@+. .+*%@@@@++:.             
-                                   .%@%*+*#*+@@@@%@@*#=-            
-                                   :****+#+++%@+#%@#%@@+            
-                                             =-+*@@%%+@#:           
-                                             .**#%##-*+%            
-                                             .%#@##**@@%            
-                            -----------------+**+=====*=------------)"
+        {R"( |                                                       
+    |                                                                
+    |                                                       ....     
+    |                                                      :: .-.    
+    |                                                      -    -    
+    |                                                      -    -    
+    |                                                      .-  ::    
+    |                                                   .:::.  .:-   
+    |                                                  -.        .:::
+    |                                                  - -.      -  -
+    |                                                  - ::      =  -
+    |                                                  - ::      -  -
+    |                                                  - ::      -  -
+    |                                     :-----------=--=-------=--=)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#**%:                
-                                          :=**##@@#+                
-                                        .*@@+.=%#@@*                
-                                      -%@%#:. .+@@%-                
-                                     *%#%*=-+*@@@@@*+:.             
-                                     -#%*%*#*%%%@%%@**=-            
-                                      .-++*##%@@@@@%@%%#            
-                                           .:+#%%@#%#@@+            
-                                             =*#@%+#%%%#            
-                                             =##@#%%#@@%            
-                            -----------------=**+=====*=------------)"
+        {R"( |                                                       
+    |                                                                
+    |                                               ....             
+    |                                              -. :-.            
+    |                                              -   ::            
+    |                                              -   ::            
+    |                                              -.  -.            
+    |                                            ::.   .:::          
+    |                                          -:.        .-.        
+    |                                         .-         :  -        
+    |                                        .-  ..     ::  -        
+    |                                       .-  .--     -.  -        
+    |                                       -.  - -     -.  -        
+    |                             .---------=--=--=-----=---=--------)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#**%:                
-                                          :=**##@@#+                
-                                        .*@@+.=%#@@*                
-                                      -%@%#:. .+@@%-                
-                                     *%#%*=-+*@@@@@*+:.             
-                                     -#%*%*#*%%%@%%@**=-            
-                                      .-++*##%@@@@@%@%%#            
-                                           .:+#%%@#%#@@+            
-                                             =*#@%+#%%%#            
-                                             =##@#%%#@@%            
-                            -----------------=**+=====*=------------)"
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                          .- .-:                
+    |                                          -    -                
+    |                                          -.   -                
+    |                                          .-. .-                
+    |                                       .:::.  .:::              
+    |                                     .::         .::            
+    |                                    ::.         -  -            
+    |                                  .-....-+      -  -            
+    |                                .:...-.  -      -  -            
+    |                               .- .-     -      -  -            
+    |                        -------=--=------=------=--=------------)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#**%:                
-                                          :=**##@@#+                
-                                        .*@@+.=%#@@*                
-                                      -%@%#:. .+@@%-                
-                                     *%#%*=-+*@@@@@*+:.             
-                                     -#%*%*#*%%%@%%@**=-            
-                                      .-++*##%@@@@@%@%%#            
-                                           .:+#%%@#%#@@+            
-                                             =*#@%+#%%%#            
-                                             =##@#%%#@@%            
-                            -----------------=**+=====*=------------)"
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                          .- .-:                
+    |                                          -    -                
+    |                                          -    -                
+    |                              *:          .-  -.                
+    |                              .%#:     .:::.  .:::.             
+    |                               =@%- ..::          .-            
+    |                               .%-::-.          -  -            
+    |                                .-. : ..:=      -  -            
+    |                                  :.:-:  -      -  -            
+    |                                         -      -  -            
+    |                        -----------------=------=--=------------)"
         },              
-        {R"(                ████████████████████████████████████████
-                            █████████████████████▓██████████████████
-                            ██████████████████▓▓▓███████████████████
-                            ██████████████████▓░░▓▓█████████████████
-                            ██████████████████▓▒▓▓██████████████████
-                            ███████████████████▒█▓██████████████████
-                            ███████████████████▓▓███████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████)"
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                      .:- .- .-:                
+    |                                     :%%. -    -                
+    |                                    =@@:  -    -                
+    |                                  ::.+*.  .-  -.                
+    |                                .:. -. .:::.  .:::.             
+    |                               .-  .::::          .-            
+    |                               ::::::::::.      -  -            
+    |                                         ::     -  -            
+    |                                         .-     -  -            
+    |                                         .-     -  -            
+    |                        -----------------=------=--=------------)"
         },              
-        {R"(                ████████████████████████████████████████
-                            ██████████████████▓▓▓███████████████████
-                            ██████████████████▓█████████████████
-                            ██████████████████▓▒▓▓██████████████████
-                            ███████████████████▒█████████████████
-                            ███████████████████▓▓███████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            █████████████████████▓██████████████████
-                            ████████████████████████████████████████)"
-        },              
-        {R"(                ████████████████████████████████████████
-                            ████████████████████████████████████
-                            ███████████████████████████████████
-                            ██████████████████▓▓██████████████████
-                            ███████████████████████████████████
-                            █████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            ████████████████████████████████████████
-                            █████████████████████████████████████
-                            ████████████████████████████████████████)"
-        }
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                          .- .-:                
+    |                                      :=***    -                
+    |                                    .=%#*.=    -                
+    |                                  .:..*:. .-  -.                
+    |                                 -.  :-::::.  .:::.             
+    |                                 ::.            ...-            
+    |                                  .:::::.       -. -            
+    |                                       ..=      -  -            
+    |                                         -      -  -            
+    |                                         -      -  -            
+    |                        -----------------=------=---=-----------)"
+        }, 
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                          .- .-:                
+    |                                      :=***    -                
+    |                                    .=%#*.=    -                
+    |                                  .:..*:. .-  -.                
+    |                                 -.  :-::::.  .:::.             
+    |                                 ::.            ...-            
+    |                                  .:::::.       -. -            
+    |                                       ..=      -  -            
+    |                                         -      -  -            
+    |                                         -      -  -            
+    |                        -----------------=------=---=-----------)"
+        },
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                          .- .-:                
+    |                                      :=***    -                
+    |                                    .=%#*.=    -                
+    |                                  .:..*:. .-  -.                
+    |                                 -.  :-::::.  .:::.             
+    |                                 ::.            ...-            
+    |                                  .:::::.       -. -            
+    |                                       ..=      -  -            
+    |                                         -      -  -            
+    |                                         -      -  -            
+    |                        -----------------=------=---=-----------)"
+        },
+        {R"( |               
+    |                        ███████                      ███████████
+    |                        ███████████████████     ████████████████
+    |                        ██████████            ██████████████████
+    |                        ████████████████████     ███████████████
+    |                        ██████████████████   ███████████████████
+    |                        █████████████              █████████████
+    |                        ███████                           ██████
+    |                        █████████████████           ████████████
+    |                        ███████████████████████         ████████
+    |                        ███████████████      ███████████████████
+    |                        █████████████                   ████████
+    |                        ████████                            ████
+    |                        █████████████              █████████████
+    |                        ████████████████████   █████████████████
+    |                        ████████████████████████████████████████)"
+        },
+        {R"( |              
+    |                        █████████████████████    ███████████████
+    |                        ███████████████████     ████████████████
+    |                        ██████████████████▓▓  ██████████████████
+    |                        ████████████████████     ███████████████
+    |                        ██████████████████   ███████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████   █████████████████
+    |                        ████████████████████████████████████████)"
+        },
+        
+        
+        {R"( |              
+    |                        █████████████████████    ███████████████
+    |                        ███████████████████     ████████████████
+    |                        ██████████████████▓▓  ██████████████████
+    |                        ████████████████████     ███████████████
+    |                        ██████████████████   ███████████████████
+    |                        █████████████████████████████    ███████
+    |                        ████████████████████████████████████████
+    |                        █████████████████   ████████████████████
+    |                        ███████████████████████████  ███████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████ 
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████   █████████████████
+    |                        ████████████████████████████████████████)"
+        },
+        {R"( |               
+    |                        █████████████████████    ███████████████
+    |                        ███████████████████     ████████████████
+    |                        ██████████████████▓▓  ██████████████████
+    |                        ████████████████████     ███████████████
+    |                        ██████████████████   ███████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████   █████████████████
+    |                        ████████████████████████████████████████)"
+        },             
+        
     };
 
     // loops * frames
@@ -545,9 +708,622 @@ void playAnimationShotSelf(int ms_per_frame, int loops){
             }
             std::cout << std::flush;
             std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+            resetscreen();
         }
     }
     // after animation, clear the animation area
+    clearScreen();
+    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
+
+    draw_box(box_width, box_height, box_x, box_y); //description box
+
+    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); //highlighted box
+
+    draw_box(action_box_width, action_box_height, action2_x, action_y); //other action box
+
+    draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
+
+    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
+    print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
+    print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
+    updateLife();
+    set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes
+}
+//=========================================player shot self blenk=====================================================
+void playAnimationPlayerSSBlank(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 16;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    resetscreen();
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {R"( |                                        
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                          =#@@#+                
+    |                                          =%#@@*                
+    |                                          .+@@%-                
+    |                                       .+*@@@@@*+:.             
+    |                                      -%@@%%@%%@**=-            
+    |                                      #%#@@@@@@%@%%#            
+    |                                      %%%@#%%@#%#@@+            
+    |                                      *%@@*#@%+#%%%#            
+    |                                      +#@%##@#%%#@@%            
+    |                        -------------=*+=+**+=====*=------------)"                                           
+        },              
+        {R"( |                                                       
+
+    |                                    ....                        
+    |                                   .**=%=                       
+    |                                   :%-#*%                       
+    |                                   :@##@#                       
+    |                                   .+#@%*                       
+    |                                 =*#@%@@*+:.                    
+    |                               :#%@@@@@%@#%=+                   
+    |                               =%%%%*+%@%%@@*-                  
+    |                               +%##-+*%@#@*%#=                  
+    |                               -##=+=*%%*+=%#:                  
+    |                               =+%%##%%%**%@%-                  
+    |                        -------**=+**+=====*==------.           )"
+        },              
+        {R"( |                                                         
+    |                                                                
+    |                           ....                                 
+    |                          .*#*@-                                
+    |                          :#@%@*                                
+    |                          .%@#@%                                
+    |                           -@@%*                                
+    |                        =*%@@@@%+:.                             
+    |                        @@%#@%#@#*=+                            
+    |                        #@@@@@@%@%@#-                           
+    |                        *@*%%@#%*%@%.                           
+    |                        %@#+@@**%%@%:                           
+    |                        %%##%#@#%%@%-                           
+    |                        =+**+=====*==-----------.               )"
+        },              
+        {R"( |                                                       
+    |                                                                
+    |                        ..                                      
+    |                        @+.                                     
+    |                        @#.                                     
+    |                        @@.                                     
+    |                        %#.                                     
+    |                        @%+-:                                   
+    |                        %@%*++.                                 
+    |                        @@%%%#=                                 
+    |                        %%*%@%:                                 
+    |                        #+@%%%=                                 
+    |                        %#%%@%=                                 
+    |                        ====*+=----------:                      )"
+        },              
+        {R"( |                                                        
+    |                                                                
+    |                                                                
+    |                                                                
+    |                                                                
+    |                                                                
+    |                                                                
+    |                        :                                       
+    |                        ++.                                     
+    |                        @#=                                     
+    |                        @%.                                     
+    |                        %%-                                     
+    |                        @%=                                     
+    |                        *==----------:                          )"
+        },              
+        {R"( |                                                       
+    |                                                                
+    |                                                       ....     
+    |                                                      :: .-.    
+    |                                                      -    -    
+    |                                                      -    -    
+    |                                                      .-  ::    
+    |                                                   .:::.  .:-   
+    |                                                  -.        .:::
+    |                                                  - -.      -  -
+    |                                                  - ::      =  -
+    |                                                  - ::      -  -
+    |                                                  - ::      -  -
+    |                                     :-----------=--=-------=--=)"
+        },              
+        {R"( |                                                       
+    |                                                                
+    |                                               ....             
+    |                                              -. :-.            
+    |                                              -   ::            
+    |                                              -   ::            
+    |                                              -.  -.            
+    |                                            ::.   .:::          
+    |                                          -:.        .-.        
+    |                                         .-         :  -        
+    |                                        .-  ..     ::  -        
+    |                                       .-  .--     -.  -        
+    |                                       -.  - -     -.  -        
+    |                             .---------=--=--=-----=---=--------)"
+        },              
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                          .- .-:                
+    |                                          -    -                
+    |                                          -.   -                
+    |                                          .-. .-                
+    |                                       .:::.  .:::              
+    |                                     .::         .::            
+    |                                    ::.         -  -            
+    |                                  .-....-+      -  -            
+    |                                .:...-.  -      -  -            
+    |                               .- .-     -      -  -            
+    |                        -------=--=------=------=--=------------)"
+        },              
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                          .- .-:                
+    |                                          -    -                
+    |                                          -    -                
+    |                              *:          .-  -.                
+    |                              .%#:     .:::.  .:::.             
+    |                               =@%- ..::          .-            
+    |                               .%-::-.          -  -            
+    |                                .-. : ..:=      -  -            
+    |                                  :.:-:  -      -  -            
+    |                                         -      -  -            
+    |                        -----------------=------=--=------------)"
+        },              
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                      .:- .- .-:                
+    |                                     :%%. -    -                
+    |                                    =@@:  -    -                
+    |                                  ::.+*.  .-  -.                
+    |                                .:. -. .:::.  .:::.             
+    |                               .-  .::::          .-            
+    |                               ::::::::::.      -  -            
+    |                                         ::     -  -            
+    |                                         .-     -  -            
+    |                                         .-     -  -            
+    |                        -----------------=------=--=------------)"
+        },              
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                          .- .-:                
+    |                                      :=***    -                
+    |                                    .=%#*.=    -                
+    |                                  .:..*:. .-  -.                
+    |                                 -.  :-::::.  .:::.             
+    |                                 ::.            ...-            
+    |                                  .:::::.       -. -            
+    |                                       ..=      -  -            
+    |                                         -      -  -            
+    |                                         -      -  -            
+    |                        -----------------=------=---=-----------)"
+        }, 
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                          .- .-:                
+    |                                      :=***    -                
+    |                                    .=%#*.=    -                
+    |                                  .:..*:. .-  -.                
+    |                                 -.  :-::::.  .:::.             
+    |                                 ::.            ...-            
+    |                                  .:::::.       -. -            
+    |                                       ..=      -  -            
+    |                                         -      -  -            
+    |                                         -      -  -            
+    |                        -----------------=------=---=-----------)"
+        },
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                          .- .-:                
+    |                                      :=***    -                
+    |                                    .=%#*.=    -                
+    |                                  .:..*:. .-  -.                
+    |                                 -.  :-::::.  .:::.             
+    |                                 ::.            ...-            
+    |                                  .:::::.       -. -            
+    |                                       ..=      -  -            
+    |                                         -      -  -            
+    |                                         -      -  -            
+    |                        -----------------=------=---=-----------)"
+        }, 
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                      .:- .- .-:                
+    |                                     :%%. -    -                
+    |                                    =@@:  -    -                
+    |                                  ::.+*.  .-  -.                
+    |                                .:. -. .:::.  .:::.             
+    |                               .-  .::::          .-            
+    |                               ::::::::::.      -  -            
+    |                                         ::     -  -            
+    |                                         .-     -  -            
+    |                                         .-     -  -            
+    |                        -----------------=------=--=------------)"
+        },
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                          .- .-:                
+    |                                          -    -                
+    |                                          -    -                
+    |                              *:          .-  -.                
+    |                              .%#:     .:::.  .:::.             
+    |                               =@%- ..::          .-            
+    |                               .%-::-.          -  -            
+    |                                .-. : ..:=      -  -            
+    |                                  :.:-:  -      -  -            
+    |                                         -      -  -            
+    |                        -----------------=------=--=------------)"
+        },
+        {R"( |                                                       
+    |                                                                
+    |                                           ....                 
+    |                                          .- .-:                
+    |                                          -    -                
+    |                                          -.   -                
+    |                                          .-. .-                
+    |                                       .:::.  .:::              
+    |                                     .::         .::            
+    |                                    ::.         -  -            
+    |                                  .-....-+      -  -            
+    |                                .:...-.  -      -  -            
+    |                               .- .-     -      -  -            
+    |                        -------=--=------=------=--=------------)"
+        },
+        {R"( |                                                       
+    |                                                                
+    |                                                       ....     
+    |                                                      :: .-.    
+    |                                                      -    -    
+    |                                                      -    -    
+    |                                                      .-  ::    
+    |                                                   .:::.  .:-   
+    |                                                  -.        .:::
+    |                                                  - -.      -  -
+    |                                                  - ::      =  -
+    |                                                  - ::      -  -
+    |                                                  - ::      -  -
+    |                                     :-----------=--=-------=--=)"
+        },
+        {R"( |                                                        
+    |                                                                
+    |                                                                
+    |                                                                
+    |                                                                
+    |                                                                
+    |                                                                
+    |                        :                                       
+    |                        ++.                                     
+    |                        @#=                                     
+    |                        @%.                                     
+    |                        %%-                                     
+    |                        @%=                                     
+    |                        *==----------:                          )"
+        },
+        {R"( |                                                       
+    |                                                                
+    |                        ..                                      
+    |                        @+.                                     
+    |                        @#.                                     
+    |                        @@.                                     
+    |                        %#.                                     
+    |                        @%+-:                                   
+    |                        %@%*++.                                 
+    |                        @@%%%#=                                 
+    |                        %%*%@%:                                 
+    |                        #+@%%%=                                 
+    |                        %#%%@%=                                 
+    |                        ====*+=----------:                      )"
+        },          
+        {R"( |                                                         
+    |                                                                
+    |                           ....                                 
+    |                          .*#*@-                                
+    |                          :#@%@*                                
+    |                          .%@#@%                                
+    |                           -@@%*                                
+    |                        =*%@@@@%+:.                             
+    |                        @@%#@%#@#*=+                            
+    |                        #@@@@@@%@%@#-                           
+    |                        *@*%%@#%*%@%.                           
+    |                        %@#+@@**%%@%:                           
+    |                        %%##%#@#%%@%-                           
+    |                        =+**+=====*==-----------.               )"
+        },
+        {R"( |                                        
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                          =#@@#+                
+    |                                          =%#@@*                
+    |                                          .+@@%-                
+    |                                       .+*@@@@@*+:.             
+    |                                      -%@@%%@%%@**=-            
+    |                                      #%#@@@@@@%@%%#            
+    |                                      %%%@#%%@#%#@@+            
+    |                                      *%@@*#@%+#%%%#            
+    |                                      +#@%##@#%%#@@%            
+    |                        -------------=*+=+**+=====*=------------)"                                           
+        },              
+        
+    };
+    
+    // loops * frames
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+            resetscreen();
+        }
+    }
+    // after animation, clear the animation area
+    clearScreen();
+    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
+
+    draw_box(box_width, box_height, box_x, box_y); //description box
+
+    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); //highlighted box
+
+    draw_box(action_box_width, action_box_height, action2_x, action_y); //other action box
+
+    draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
+
+    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
+    print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
+    print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
+    updateLife();
+    set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes
+}
+// ==========================================================enemy shot self animation=====================================
+void playAnimationShotSelf(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 16;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    resetscreen();
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {R"( |                                         
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                          =#@@#+                
+    |                                          =%#@@*                
+    |                                          .+@@%-                
+    |                                       .+*@@@@@*+:.             
+    |                                      -%@@%%@%%@**=-            
+    |                                      #%#@@@@@@%@%%#            
+    |                                      %%%@#%%@#%#@@+            
+    |                                      *%@@*#@%+#%%%#            
+    |                                      +#@%##@#%%#@@%            
+    |                        -------------=*+=+**+=====*=------------)"                                           
+        },              
+        {R"( |                                                         
+    |                                           ....                 
+    |                                          .#*=%:                
+    |                                          =#=*#*                
+    |                                          =@##:*                
+    |                                          :#@##:                
+    |                                        :+**+*%+-:.             
+    |                                      -@**+**#%*+*++            
+    |                                     .*%%#++*#%++*##:           
+    |                                    .=@%%*+**=#**+=#-           
+    |                                    -%@@%=%**@@%@+=*            
+    |                                    %@@#..###+%#%%@#            
+    |                        -----------=#*==-+**+=====*=------------)"
+        },              
+        {R"( |                                                         
+    |                                           ....                 
+    |                                          .#*=%:                
+    |                                          =#=*#*                
+    |                                          +@##%*                
+    |                                          .#%%%-                
+    |                                       -**%@@@@++:.             
+    |                                      =%%@@@@%@@*#=-            
+    |                                     -#@@%%+#%@#%@@+            
+    |                                    -*@@#@*+*@@%%+@#:           
+    |                                   .*%%@#:**#%##-*+%            
+    |                                   +%#@- .%#@##**@@%            
+    |                        ----------=***=--+**+=====*=------------)"
+        },              
+        {R"( |                                                         
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                          =#@@#+                
+    |                                          =%#@@*                
+    |                                          .+@@%-                
+    |                                       .+*@@@@@*+:.             
+    |                                     .-##@%%@%%@**=-            
+    |                                    -#@@%@@@@@@%@%%#            
+    |                                  .+@%@%#*#%%@#%#@@+            
+    |                                .=@@@*.  =*#@%+#%%%#            
+    |                               .%@@+     =##@#%%#@@%            
+    |                        -------***+------=**+=====*=------------)"
+        },              
+        {R"( |                                                         
+    |                                           ....                 
+    |                                          .#*=%:                
+    |                                          =#=*#*                
+    |                                          =@##:*                
+    |                              *:          :#@##:                
+    |                              .##:      :#**+*%+-:.             
+    |                               *@%- .:=%%#***#%*+*++            
+    |                               -%*#=+*+%##++*#%++*##:           
+    |                                .+##@**%*++**=#**+=#-           
+    |                                  -#+=-  =%**@@%@+=*            
+    |                                         .###+%#%%@#            
+    |                        -----------------+**+=====*=------------)"
+        },              
+        {R"( |                                                         
+    |                                           ....                 
+    |                                      .:- .#*=%:                
+    |                                     :%%. =#=*#*                
+    |                                    +@%.  +@##%*                
+    |                                  -%@%+   .#%%%-                
+    |                                :#@@+. .+*%@@@@++:.             
+    |                               .%@%*+*#*+@@@@%@@*#=-            
+    |                               :****+#+++%@+#%@#%@@+            
+    |                                         =-+*@@%%+@#:           
+    |                                         .**#%##-*+%            
+    |                                         .%#@##**@@%            
+    |                        -----------------+**+=====*=------------)"
+        },              
+        {R"( |                                                          
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                      :=**##@@#+                
+    |                                    .*@@+.=%#@@*                
+    |                                  -%@%#:. .+@@%-                
+    |                                 *%#%*=-+*@@@@@*+:.             
+    |                                 -#%*%*#*%%%@%%@**=-            
+    |                                  .-++*##%@@@@@%@%%#            
+    |                                       .:+#%%@#%#@@+            
+    |                                         =*#@%+#%%%#            
+    |                                         =##@#%%#@@%            
+    |                        -----------------=**+=====*=------------)"
+        },              
+        {R"( |                                                         
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                      :=**##@@#+                
+    |                                    .*@@+.=%#@@*                
+    |                                  -%@%#:. .+@@%-                
+    |                                 *%#%*=-+*@@@@@*+:.             
+    |                                 -#%*%*#*%%%@%%@**=-            
+    |                                  .-++*##%@@@@@%@%%#            
+    |                                       .:+#%%@#%#@@+            
+    |                                         =*#@%+#%%%#            
+    |                                         =##@#%%#@@%            
+    |                        -----------------=**+=====*=------------)"
+        },              
+        {R"( |                                                         
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                      :=**##@@#+                
+    |                                    .*@@+.=%#@@*                
+    |                                  -%@%#:. .+@@%-                
+    |                                 *%#%*=-+*@@@@@*+:.             
+    |                                 -#%*%*#*%%%@%%@**=-            
+    |                                  .-++*##%@@@@@%@%%#            
+    |                                       .:+#%%@#%#@@+            
+    |                                         =*#@%+#%%%#            
+    |                                         =##@#%%#@@%            
+    |                        -----------------=**+=====*=------------)"
+        },                          
+        {R"( |               
+    |                        ███████                      ███████████
+    |                        ███████████████████     ████████████████
+    |                        ██████████            ██████████████████
+    |                        ████████████████████     ███████████████
+    |                        ██████████████████   ███████████████████
+    |                        █████████████              █████████████
+    |                        ███████                           ██████
+    |                        █████████████████           ████████████
+    |                        ███████████████████████         ████████
+    |                        ███████████████      ███████████████████
+    |                        █████████████                   ████████
+    |                        ████████                            ████
+    |                        █████████████              █████████████
+    |                        ████████████████████   █████████████████
+    |                        ████████████████████████████████████████)"
+        },
+        {R"( |              
+    |                        █████████████████████    ███████████████
+    |                        ███████████████████     ████████████████
+    |                        ██████████████████▓▓  ██████████████████
+    |                        ████████████████████     ███████████████
+    |                        ██████████████████   ███████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████   █████████████████
+    |                        ████████████████████████████████████████)"
+        },
+        
+        
+        {R"( |              
+    |                        █████████████████████    ███████████████
+    |                        ███████████████████     ████████████████
+    |                        ██████████████████▓▓  ██████████████████
+    |                        ████████████████████     ███████████████
+    |                        ██████████████████   ███████████████████
+    |                        █████████████████████████████    ███████
+    |                        ████████████████████████████████████████
+    |                        █████████████████   ████████████████████
+    |                        ███████████████████████████  ███████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████ 
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████   █████████████████
+    |                        ████████████████████████████████████████)"
+        },
+        {R"( |               
+    |                        █████████████████████    ███████████████
+    |                        ███████████████████     ████████████████
+    |                        ██████████████████▓▓  ██████████████████
+    |                        ████████████████████     ███████████████
+    |                        ██████████████████   ███████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████████████████████████
+    |                        ████████████████████   █████████████████
+    |                        ████████████████████████████████████████)"
+        },
+
+    };
+
+    // loops * frames
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+            resetscreen();
+        }
+    }
+    // after animation, clear the animation area
+    clearScreen();
     draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
 
     draw_box(box_width, box_height, box_x, box_y); //description box
@@ -564,182 +1340,439 @@ void playAnimationShotSelf(int ms_per_frame, int loops){
     updateLife();
     set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes   
 }
-// ================================================================================================================================shot self blank antimation=====================================
+// =========================================================enemy shot self blank antimation=====================================
 void playAnimationShotSelfblank(int ms_per_frame, int loops){
     // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
     // choose a comfortable inner area inside that large box
     int anim_start_x = box_x;                // left column inside the big box
     int anim_start_y = box_y - 16;           // a few lines below the big box top border
     int anim_width = box_width;              // max width to clear
+    resetscreen();
     // frames (multi-line)
     std::vector<std::vector<std::string>> frames = {
-        {R"(                                        
-                                               ....                 
-                                              .#**%:                
-                                              =#@@#+                
-                                              =%#@@*                
-                                              .+@@%-                
-                                           .+*@@@@@*+:.             
-                                          -%@@%%@%%@**=-            
-                                          #%#@@@@@@%@%%#            
-                                          %%%@#%%@#%#@@+            
-                                          *%@@*#@%+#%%%#            
-                                          +#@%##@#%%#@@%            
-                            -------------=*+=+**+=====*=------------)"                                           
+        {R"( |                                        
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                          =#@@#+                
+    |                                          =%#@@*                
+    |                                          .+@@%-                
+    |                                       .+*@@@@@*+:.             
+    |                                      -%@@%%@%%@**=-            
+    |                                      #%#@@@@@@%@%%#            
+    |                                      %%%@#%%@#%#@@+            
+    |                                      *%@@*#@%+#%%%#            
+    |                                      +#@%##@#%%#@@%            
+    |                        -------------=*+=+**+=====*=------------)"                                           
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#*=%:                
-                                              =#=*#*                
-                                              =@##:*                
-                                              :#@##:                
-                                            :+**+*%+-:.             
-                                          -@**+**#%*+*++            
-                                         .*%%#++*#%++*##:           
-                                        .=@%%*+**=#**+=#-           
-                                        -%@@%=%**@@%@+=*            
-                                        %@@#..###+%#%%@#            
-                            -----------=#*==-+**+=====*=------------)"
+        {R"( |                                                       
+    |                                           ....                 
+    |                                          .#*=%:                
+    |                                          =#=*#*                
+    |                                          =@##:*                
+    |                                          :#@##:                
+    |                                        :+**+*%+-:.             
+    |                                      -@**+**#%*+*++            
+    |                                     .*%%#++*#%++*##:           
+    |                                    .=@%%*+**=#**+=#-           
+    |                                    -%@@%=%**@@%@+=*            
+    |                                    %@@#..###+%#%%@#            
+    |                        -----------=#*==-+**+=====*=------------)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#*=%:                
-                                              =#=*#*                
-                                              +@##%*                
-                                              .#%%%-                
-                                           -**%@@@@++:.             
-                                          =%%@@@@%@@*#=-            
-                                         -#@@%%+#%@#%@@+            
-                                        -*@@#@*+*@@%%+@#:           
-                                       .*%%@#:**#%##-*+%            
-                                       +%#@- .%#@##**@@%            
-                            ----------=***=--+**+=====*=------------)"
+        {R"( |                                                         
+    |                                           ....                 
+    |                                          .#*=%:                
+    |                                          =#=*#*                
+    |                                          +@##%*                
+    |                                          .#%%%-                
+    |                                       -**%@@@@++:.             
+    |                                      =%%@@@@%@@*#=-            
+    |                                     -#@@%%+#%@#%@@+            
+    |                                    -*@@#@*+*@@%%+@#:           
+    |                                   .*%%@#:**#%##-*+%            
+    |                                   +%#@- .%#@##**@@%            
+    |                        ----------=***=--+**+=====*=------------)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#**%:                
-                                              =#@@#+                
-                                              =%#@@*                
-                                              .+@@%-                
-                                           .+*@@@@@*+:.             
-                                         .-##@%%@%%@**=-            
-                                        -#@@%@@@@@@%@%%#            
-                                      .+@%@%#*#%%@#%#@@+            
-                                    .=@@@*.  =*#@%+#%%%#            
-                                   .%@@+     =##@#%%#@@%            
-                            -------***+------=**+=====*=------------)"
+        {R"( |                                                       
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                          =#@@#+                
+    |                                          =%#@@*                
+    |                                          .+@@%-                
+    |                                       .+*@@@@@*+:.             
+    |                                     .-##@%%@%%@**=-            
+    |                                    -#@@%@@@@@@%@%%#            
+    |                                  .+@%@%#*#%%@#%#@@+            
+    |                                .=@@@*.  =*#@%+#%%%#            
+    |                               .%@@+     =##@#%%#@@%            
+    |                        -------***+------=**+=====*=------------)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#*=%:                
-                                              =#=*#*                
-                                              =@##:*                
-                                  *:          :#@##:                
-                                  .##:      :#**+*%+-:.             
-                                   *@%- .:=%%#***#%*+*++            
-                                   -%*#=+*+%##++*#%++*##:           
-                                    .+##@**%*++**=#**+=#-           
-                                      -#+=-  =%**@@%@+=*            
-                                             .###+%#%%@#            
-                            -----------------+**+=====*=------------)"
+        {R"( |                                                        
+    |                                           ....                 
+    |                                          .#*=%:                
+    |                                          =#=*#*                
+    |                                          =@##:*                
+    |                              *:          :#@##:                
+    |                              .##:      :#**+*%+-:.             
+    |                               *@%- .:=%%#***#%*+*++            
+    |                               -%*#=+*+%##++*#%++*##:           
+    |                                .+##@**%*++**=#**+=#-           
+    |                                  -#+=-  =%**@@%@+=*            
+    |                                         .###+%#%%@#            
+    |                        -----------------+**+=====*=------------)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                          .:- .#*=%:                
-                                         :%%. =#=*#*                
-                                        +@%.  +@##%*                
-                                      -%@%+   .#%%%-                
-                                    :#@@+. .+*%@@@@++:.             
-                                   .%@%*+*#*+@@@@%@@*#=-            
-                                   :****+#+++%@+#%@#%@@+            
-                                             =-+*@@%%+@#:           
-                                             .**#%##-*+%            
-                                             .%#@##**@@%            
-                            -----------------+**+=====*=------------)"
+        {R"( |                                                       
+    |                                           ....                 
+    |                                      .:- .#*=%:                
+    |                                     :%%. =#=*#*                
+    |                                    +@%.  +@##%*                
+    |                                  -%@%+   .#%%%-                
+    |                                :#@@+. .+*%@@@@++:.             
+    |                               .%@%*+*#*+@@@@%@@*#=-            
+    |                               :****+#+++%@+#%@#%@@+            
+    |                                         =-+*@@%%+@#:           
+    |                                         .**#%##-*+%            
+    |                                         .%#@##**@@%            
+    |                        -----------------+**+=====*=------------)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#**%:                
-                                          :=**##@@#+                
-                                        .*@@+.=%#@@*                
-                                      -%@%#:. .+@@%-                
-                                     *%#%*=-+*@@@@@*+:.             
-                                     -#%*%*#*%%%@%%@**=-            
-                                      .-++*##%@@@@@%@%%#            
-                                           .:+#%%@#%#@@+            
-                                             =*#@%+#%%%#            
-                                             =##@#%%#@@%            
-                            -----------------=**+=====*=------------)"
+        {R"( |                                                       
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                      :=**##@@#+                
+    |                                    .*@@+.=%#@@*                
+    |                                  -%@%#:. .+@@%-                
+    |                                 *%#%*=-+*@@@@@*+:.             
+    |                                 -#%*%*#*%%%@%%@**=-            
+    |                                  .-++*##%@@@@@%@%%#            
+    |                                       .:+#%%@#%#@@+            
+    |                                         =*#@%+#%%%#            
+    |                                         =##@#%%#@@%            
+    |                        -----------------=**+=====*=------------)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#**%:                
-                                          :=**##@@#+                
-                                        .*@@+.=%#@@*                
-                                      -%@%#:. .+@@%-                
-                                     *%#%*=-+*@@@@@*+:.             
-                                     -#%*%*#*%%%@%%@**=-            
-                                      .-++*##%@@@@@%@%%#            
-                                           .:+#%%@#%#@@+            
-                                             =*#@%+#%%%#            
-                                             =##@#%%#@@%            
-                            -----------------=**+=====*=------------)"
+        {R"( |                                                       
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                      :=**##@@#+                
+    |                                    .*@@+.=%#@@*                
+    |                                  -%@%#:. .+@@%-                
+    |                                 *%#%*=-+*@@@@@*+:.             
+    |                                 -#%*%*#*%%%@%%@**=-            
+    |                                  .-++*##%@@@@@%@%%#            
+    |                                       .:+#%%@#%#@@+            
+    |                                         =*#@%+#%%%#            
+    |                                         =##@#%%#@@%            
+    |                        -----------------=**+=====*=------------)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#**%:                
-                                          :=**##@@#+                
-                                        .*@@+.=%#@@*                
-                                      -%@%#:. .+@@%-                
-                                     *%#%*=-+*@@@@@*+:.             
-                                     -#%*%*#*%%%@%%@**=-            
-                                      .-++*##%@@@@@%@%%#            
-                                           .:+#%%@#%#@@+            
-                                             =*#@%+#%%%#            
-                                             =##@#%%#@@%            
-                            -----------------=**+=====*=------------)"
+        {R"( |                                                       
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                      :=**##@@#+                
+    |                                    .*@@+.=%#@@*                
+    |                                  -%@%#:. .+@@%-                
+    |                                 *%#%*=-+*@@@@@*+:.             
+    |                                 -#%*%*#*%%%@%%@**=-            
+    |                                  .-++*##%@@@@@%@%%#            
+    |                                       .:+#%%@#%#@@+            
+    |                                         =*#@%+#%%%#            
+    |                                         =##@#%%#@@%            
+    |                        -----------------=**+=====*=------------)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#*=%:                
-                                              =#=*#*                
-                                              =@##:*                
-                                  *:          :#@##:                
-                                  .##:      :#**+*%+-:.             
-                                   *@%- .:=%%#***#%*+*++            
-                                   -%*#=+*+%##++*#%++*##:           
-                                    .+##@**%*++**=#**+=#-           
-                                      -#+=-  =%**@@%@+=*            
-                                             .###+%#%%@#            
-                            -----------------+**+=====*=------------)"
+        {R"( |                                                       
+    |                                           ....                 
+    |                                          .#*=%:                
+    |                                          =#=*#*                
+    |                                          =@##:*                
+    |                              *:          :#@##:                
+    |                              .##:      :#**+*%+-:.             
+    |                               *@%- .:=%%#***#%*+*++            
+    |                               -%*#=+*+%##++*#%++*##:           
+    |                                .+##@**%*++**=#**+=#-           
+    |                                  -#+=-  =%**@@%@+=*            
+    |                                         .###+%#%%@#            
+    |                        -----------------+**+=====*=------------)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#**%:                
-                                              =#@@#+                
-                                              =%#@@*                
-                                              .+@@%-                
-                                           .+*@@@@@*+:.             
-                                         .-##@%%@%%@**=-            
-                                        -#@@%@@@@@@%@%%#            
-                                      .+@%@%#*#%%@#%#@@+            
-                                    .=@@@*.  =*#@%+#%%%#            
-                                   .%@@+     =##@#%%#@@%            
-                            -------***+------=**+=====*=------------)"
+        {R"( |                                                       
+    |                                           ....                 
+    |                                          .#**%:                
+    |                                          =#@@#+                
+    |                                          =%#@@*                
+    |                                          .+@@%-                
+    |                                       .+*@@@@@*+:.             
+    |                                     .-##@%%@%%@**=-            
+    |                                    -#@@%@@@@@@%@%%#            
+    |                                  .+@%@%#*#%%@#%#@@+            
+    |                                .=@@@*.  =*#@%+#%%%#            
+    |                               .%@@+     =##@#%%#@@%            
+    |                        -------***+------=**+=====*=------------)"
         },              
-        {R"(                                                        
-                                               ....                 
-                                              .#*=%:                
-                                              =#=*#*                
-                                              +@##%*                
-                                              .#%%%-                
-                                           -**%@@@@++:.             
-                                          =%%@@@@%@@*#=-            
-                                         -#@@%%+#%@#%@@+            
-                                        -*@@#@*+*@@%%+@#:           
-                                       .*%%@#:**#%##-*+%            
-                                       +%#@- .%#@##**@@%            
-                            ----------=***=--+**+=====*=------------)"
+        {R"( |                                                       
+    |                                           ....                 
+    |                                          .#*=%:                
+    |                                          =#=*#*                
+    |                                          +@##%*                
+    |                                          .#%%%-                
+    |                                       -**%@@@@++:.             
+    |                                      =%%@@@@%@@*#=-            
+    |                                     -#@@%%+#%@#%@@+            
+    |                                    -*@@#@*+*@@%%+@#:           
+    |                                   .*%%@#:**#%##-*+%            
+    |                                   +%#@- .%#@##**@@%            
+    |                        ----------=***=--+**+=====*=------------)"
+        },
+    };
+
+    // loops * frames
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+            resetscreen();
+        }
+    }
+    // after animation, clear the animation area
+    clearScreen();
+    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
+
+    draw_box(box_width, box_height, box_x, box_y); //description box
+
+    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); //highlighted box
+
+    draw_box(action_box_width, action_box_height, action2_x, action_y); //other action box
+
+    draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
+
+    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
+    print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
+    print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
+    updateLife();
+    set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes
+}
+// ================================================you shot enemy=====================================
+void playAnimationShotEnemyLive(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 17;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    resetscreen();
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {R"( |                                             
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           +@##%*                
+    |                                           .#%%%-                
+    |                                        .+*%@@@@++:.             
+    |                                       -%%@@@@%@@*#=-            
+    |                                       *%%%#+#%@#%@@+            
+    |                                       ###*:+*@@%%+@#:           
+    |                                       =%%==*#%##-*+%            
+    |                                       +#@%##@##**@@%            
+    |                         -------------=*+=+**+=====*=------------)"                                           
+        },                   
+        {R"( |                                                                                        
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@@@@*+:.       ..    
+    |                                       -%@@%%@%%@**=-      =+.   
+    |                                       #%#@@@@@@%@%%#    .=#+=-  
+    |                                       %%%@#%%@#%#@@+    -+= +=  
+    |                                       *%@@*#@%+#%%%#    :#:..*  
+    |                                       +#@%##@#%%#@@%   :-:*.:*  
+    |                         -------------=*+=+**+=====*=----*--  =#+
+    |                                                         :=-.=..:
+    |                                                          :+-.   
+    |                                                         .-:     )"
+        },                   
+        {R"( |                                                                                                         
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                         -+**+*%+-:.   :-        
+    |                                       :%#*+**#%*+*++ .**-.      
+    |                                       =+#*++*#%++*##-+=:-=      
+    |                                       +#%++**=#**+=#+-+ :+      
+    |                                       +%%@%**@@%@+=*=*==-+-.    
+    |                                       +#@%###+%#%%@#+:*  :==    
+    |                         -------------=*+=+**+=====*=*-- --:*----
+    |                                                      ===:  :=   
+    |                                                      .=.    -:  
+    |                                                     .=.      =. )"
+        },                   
+        {R"( |                                                                                                       
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           +@##%*                
+    |                                           .#%%%-                
+    |                                        .+*%@@@@+=:.             
+    |                                       -%%@@@@%@%*#=-            
+    |                                       *%%%#+#%*=--*+            
+    |                                       ###*:+*%-= -*#:           
+    |                                       =%%==*###=+:*%.           
+    |                                       +#@%##@*-=  --=           
+    |                         -------------=*+=+**+*=: --:*-----------
+    |                                               +==.  .-          
+    |                                               .=.    -.         
+    |                                              :=.     :-         )"
+        },                   
+        {R"( |                                                                                                
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@%@@*+:.             
+    |                                       -%@@%%#%%@**=-            
+    |                                       #%#@@+=--#@%%#            
+    |                                       %%%@*+: =##@@+            
+    |                                       *%@@+%  -%#%%#            
+    |                                       +#@%++   +-@@%            
+    |                         -------------=*+=*+=.   -#*=------------
+    |                                            *-=   -:             
+    |                                            :=.    =             
+    |                                           :-      .-            )"
+        },      
+        {R"( |                                                                                                
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@%@@*+:.             
+    |                                       -%@@%%#%%@**=-            
+    |                                       #%#@@+=--#@%%#            
+    |                                       %%%@*+: =##@@+            
+    |                                       *%@@+%  -%#%%#            
+    |                                       +#@%++   +-@@%            
+    |                         -------------=*+=*+=.   -#*=------------
+    |                                            *-=   -:             
+    |                                            :=.    =             
+    |                                           :-      .-            )"
+        },      
+        {R"( |                                                                                                
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@%@@*+:.             
+    |                                       -%@@%%#%%@**=-            
+    |                                       #%#@@+=--#@%%#            
+    |                                       %%%@*+: =##@@+            
+    |                                       *%@@+%  -%#%%#            
+    |                                       +#@%++   +-@@%            
+    |                         -------------=*+=*+=.   -#*=------------
+    |                                            *-=   -:             
+    |                                            :=.    =             
+    |                                           :-      .-            )"
+        },                   
+        {R"( |                                                            
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ███████████████████ ████████████████████
+    |                         ███████████████████ █████  █████████████
+    |                         ██████████████  ███       ██████████████
+    |                         ███████████████          ███████████████
+    |                         █████████████████  ████   ██████████████
+    |                         █████████████     ██████    ████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████)"
+        },                   
+        {R"( |                                                            
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ███████████████████ ████████████████████
+    |                         █████████████████████████ ██████████████
+    |                         ████████████████████████ ███████████████
+    |                         ██████████████  ████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ███████████████ █████████  █████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████)"
+        },                   
+        {R"( |                                                            
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████)"
+        },      
+        {R"( |                                                            
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████)"
+        },      
+        {R"( |                                                            
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████)"
         },
     };
 
@@ -763,6 +1796,7 @@ void playAnimationShotSelfblank(int ms_per_frame, int loops){
         }
     }
     // after animation, clear the animation area
+    clearScreen();
     draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
 
     draw_box(box_width, box_height, box_x, box_y); //description box
@@ -779,19 +1813,980 @@ void playAnimationShotSelfblank(int ms_per_frame, int loops){
     updateLife();
     set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes
 }
-// ================================================================================================================================you shot enemy=====================================
+//=================================================you shoot blanks================================
+void playAnimationShotEnemyBlank(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 17;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    resetscreen();
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {R"( |                                             
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           +@##%*                
+    |                                           .#%%%-                
+    |                                        .+*%@@@@++:.             
+    |                                       -%%@@@@%@@*#=-            
+    |                                       *%%%#+#%@#%@@+            
+    |                                       ###*:+*@@%%+@#:           
+    |                                       =%%==*#%##-*+%            
+    |                                       +#@%##@##**@@%            
+    |                         -------------=*+=+**+=====*=------------)"                                           
+        },                   
+        {R"( |                                                                                        
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@@@@*+:.       ..    
+    |                                       -%@@%%@%%@**=-      =+.   
+    |                                       #%#@@@@@@%@%%#    .=#+=-  
+    |                                       %%%@#%%@#%#@@+    -+= +=  
+    |                                       *%@@*#@%+#%%%#    :#:..*  
+    |                                       +#@%##@#%%#@@%   :-:*.:*  
+    |                         -------------=*+=+**+=====*=----*--  =#+
+    |                                                         :=-.=..:
+    |                                                          :+-.   
+    |                                                         .-:     )"
+        },                   
+        {R"( |                                                                                                         
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                         -+**+*%+-:.   :-        
+    |                                       :%#*+**#%*+*++ .**-.      
+    |                                       =+#*++*#%++*##-+=:-=      
+    |                                       +#%++**=#**+=#+-+ :+      
+    |                                       +%%@%**@@%@+=*=*==-+-.    
+    |                                       +#@%###+%#%%@#+:*  :==    
+    |                         -------------=*+=+**+=====*=*-- --:*----
+    |                                                      ===:  :=   
+    |                                                      .=.    -:  
+    |                                                     .=.      =. )"
+        },                   
+        {R"( |                                                                                                       
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           +@##%*                
+    |                                           .#%%%-                
+    |                                        .+*%@@@@+=:.             
+    |                                       -%%@@@@%@%*#=-            
+    |                                       *%%%#+#%*=--*+            
+    |                                       ###*:+*%-= -*#:           
+    |                                       =%%==*###=+:*%.           
+    |                                       +#@%##@*-=  --=           
+    |                         -------------=*+=+**+*=: --:*-----------
+    |                                               +==.  .-          
+    |                                               .=.    -.         
+    |                                              :=.     :-         )"
+        },                   
+        {R"( |                                                                                                
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@%@@*+:.             
+    |                                       -%@@%%#%%@**=-            
+    |                                       #%#@@+=--#@%%#            
+    |                                       %%%@*+: =##@@+            
+    |                                       *%@@+%  -%#%%#            
+    |                                       +#@%++   +-@@%            
+    |                         -------------=*+=*+=.   -#*=------------
+    |                                            *-=   -:             
+    |                                            :=.    =             
+    |                                           :-      .-            )"
+        },      
+        {R"( |                                                                                                
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@%@@*+:.             
+    |                                       -%@@%%#%%@**=-            
+    |                                       #%#@@+=--#@%%#            
+    |                                       %%%@*+: =##@@+            
+    |                                       *%@@+%  -%#%%#            
+    |                                       +#@%++   +-@@%            
+    |                         -------------=*+=*+=.   -#*=------------
+    |                                            *-=   -:             
+    |                                            :=.    =             
+    |                                           :-      .-            )"
+        },      
+        {R"( |                                                                                                
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@%@@*+:.             
+    |                                       -%@@%%#%%@**=-            
+    |                                       #%#@@+=--#@%%#            
+    |                                       %%%@*+: =##@@+            
+    |                                       *%@@+%  -%#%%#            
+    |                                       +#@%++   +-@@%            
+    |                         -------------=*+=*+=.   -#*=------------
+    |                                            *-=   -:             
+    |                                            :=.    =             
+    |                                           :-      .-            )"
+        },  
+        {R"( |                                                                                                       
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           +@##%*                
+    |                                           .#%%%-                
+    |                                        .+*%@@@@+=:.             
+    |                                       -%%@@@@%@%*#=-            
+    |                                       *%%%#+#%*=--*+            
+    |                                       ###*:+*%-= -*#:           
+    |                                       =%%==*###=+:*%.           
+    |                                       +#@%##@*-=  --=           
+    |                         -------------=*+=+**+*=: --:*-----------
+    |                                               +==.  .-          
+    |                                               .=.    -.         
+    |                                              :=.     :-         )"
+        },
+        {R"( |                                                                                        
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@@@@*+:.       ..    
+    |                                       -%@@%%@%%@**=-      =+.   
+    |                                       #%#@@@@@@%@%%#    .=#+=-  
+    |                                       %%%@#%%@#%#@@+    -+= +=  
+    |                                       *%@@*#@%+#%%%#    :#:..*  
+    |                                       +#@%##@#%%#@@%   :-:*.:*  
+    |                         -------------=*+=+**+=====*=----*--  =#+
+    |                                                         :=-.=..:
+    |                                                          :+-.   
+    |                                                         .-:     )"
+        },
+        {R"( |                                             
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           +@##%*                
+    |                                           .#%%%-                
+    |                                        .+*%@@@@++:.             
+    |                                       -%%@@@@%@@*#=-            
+    |                                       *%%%#+#%@#%@@+            
+    |                                       ###*:+*@@%%+@#:           
+    |                                       =%%==*#%##-*+%            
+    |                                       +#@%##@##**@@%            
+    |                         -------------=*+=+**+=====*=------------)"                                           
+        },
+                     
+    };
 
-// ================================================================================================================================enemy shot you=====================================
+    // loops * frames
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+        }
+    }
+    // after animation, clear the animation area
+    clearScreen();
+    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
 
-// ================================================================================================================================heal=====================================
+    draw_box(box_width, box_height, box_x, box_y); //description box
 
-// ================================================================================================================================magnifying=====================================
+    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); //highlighted box
 
-// ================================================================================================================================double damage=====================================
+    draw_box(action_box_width, action_box_height, action2_x, action_y); //other action box
 
-// ================================================================================================================================handcuffs=====================================
+    draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
 
-// ================================================================================================================================inspect=====================================
+    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
+    print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
+    print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
+    updateLife();
+    set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes
+}
+// =========================================================enemy shot you=====================================
+void playAnimationEnemyShootLive(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 17;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    resetscreen();
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {R"( |                                                                                                               
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@@@@*+:.             
+    |                                       -%@@%%@%%@**=-            
+    |                                       #%#@@@@@@%@%%#            
+    |                                       %%%@#%%@#%#@@+            
+    |                                       *%@@*#@%+#%%%#            
+    |                                       +#@%##@#%%#@@%            
+    |                         -------------=*+=+**+=====*=------------)"                                           
+        },                  
+        {R"( |                                                                                                                                                    
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                         :+**+*%+-:.             
+    |                                       -@**+**#%*+*++            
+    |                                      .*%%#++*#%++*##:           
+    |                                     .=@%%*+**=#**+=#-           
+    |                                     -%@@%=%**@@%@+=*            
+    |                                     %@@#..###+%#%%@#            
+    |                         -----------=#*==-+**+=====*=------------)"
+        },                  
+        {R"( |                                                                                                                                                                        
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           +@##%*                
+    |                                           .#%%%-                
+    |                                        -**%@@@@++:.             
+    |                                       =%%@@@@%@@*#=-            
+    |                                      -#@@%%+#%@#%@@+            
+    |                                     -*@@#@*+*@@%%+@#:           
+    |                                    .*%%@#:**#%##-*+%            
+    |                                    +%#@- .%#@##**@@%            
+    |                         ----------=***=--+**+=====*=------------)"
+        },                  
+        {R"( |                                                                                                                                                                      
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@@@@*+:.             
+    |                                      .-##@%%@%%@**=-            
+    |                                     -#@@%@@@@@@%@%%#            
+    |                                   .+@%@%#*#%%@#%#@@+            
+    |                                 .=@@@*.  =*#@%+#%%%#            
+    |                                .%@@+     =##@#%%#@@%            
+    |                         -------***+------=**+=====*=------------)"
+        },                  
+        {R"( |                                                                                                                                                                
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                               *:          :#@##:                
+    |                               .##:      :#**+*%+-:.             
+    |                                *@%- .:=%%#***#%*+*++            
+    |                                -%*#=+*+%##++*#%++*##:           
+    |                                 .+##@**%*++**=#**+=#-           
+    |                                   -#+=-  =%**@@%@+=*            
+    |                                          .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },     
+        {R"( |                                                                                                                                                                
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                               *:          :#@##:                
+    |                               .##:      :#**+*%+-:.             
+    |                                *@%- .:=%%#***#%*+*++            
+    |                                -%*#=+*+%##++*#%++*##:           
+    |                                 .+##@**%*++**=#**+=#-           
+    |                                   -#+=-  =%**@@%@+=*            
+    |                                          .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },     
+        {R"( |                                                                                                                                                                
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                    %      =@##:*                
+    |                                    @      :#@##:                
+    |                                   :@:   :#**+*%+-:.             
+    |                                   *%+:=%%#***#%*+*++            
+    |                                   *%@*+%##++*#%++*##:           
+    |                                   %@@**%*++**=#**+=#-           
+    |                                   =#*=-  =%**@@%@+=*            
+    |                                          .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },                  
+        {R"( |                                                                                                                            
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                    .    :#**+*%+-:.             
+    |                                    %::=%%#***#%*+*++            
+    |                                   -%@*+%##++*#%++*##:           
+    |                                   %@@**%*++**=#**+=#-           
+    |                                   =##*-  =%**@@%@+=*            
+    |                                          .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },                  
+        {R"( |                                                                                                                            
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                   ..    :#**+*%+-:.             
+    |                                 .--+.:=%%#***#%*+*++            
+    |                                .#   *++%##++*#%++*##:           
+    |                                .+   #-*%*++**=#**+=#-           
+    |                                 +%*::--  =%**@@%@+=*            
+    |                                 .#+-.    .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },
+        {R"( |                                                                                                                          
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                   ..    :#**+*%+-:.             
+    |                                 .--+.:=%%#***#%*+*++            
+    |                                .#   *++%##++*#%++*##:           
+    |                                .+   #-*%*++**=#**+=#-           
+    |                                 +%*::--  =%**@@%@+=*            
+    |                                 .#+-.    .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },
+        {R"( |                                                                                                                            
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                   ..    :#**+*%+-:.             
+    |                                 .--+.:=%%#***#%*+*++            
+    |                                .#   *++%##++*#%++*##:           
+    |                                .+   #-*%*++**=#**+=#-           
+    |                                 +%*::--  =%**@@%@+=*            
+    |                                 .#+-.    .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },
+        {R"( |                                                           
+    |                                                                 
+    |                                                                 
+    |                                                                 
+    |                                                                 
+    |                                █                                
+    |                                ██ ██  ██                        
+    |                             ████████████                        
+    |                             ████████████                        
+    |                              ████████                           
+    |                             ██████████                          
+    |                               ██████ ██                         
+    |                               ██  ██                            )"
+        },                  
+        {R"( |                                                           
+
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ███████ ████████████████████████████████
+    |                         ███████  █ █████████████████████████████
+    |                         █████          █████████████████████████
+    |                         █████          █████████████████████████
+    |                         ██████       ███████████████████████████
+    |                         █████ █    █  ██████████████████████████
+    |                         ██████  ██  █ ██████████████████████████
+    |                         ██████████ █████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████)"
+        },     
+        {R"( |                                                           
+
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ███████ ██ █████████████████████████████
+    |                         █████ ██ █ █  ██████████████████████████
+    |                         ████████████   █████████████████████████
+    |                         ███████████ ████████████████████████████
+    |                         ████████ ███  ██████████████████████████
+    |                         ██████  ██ █████████████████████████████
+    |                         ███████████ ████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████)"
+        },      
+        {R"( |                                                            
+
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████
+    |                         ████████████████████████████████████████)"
+        },
+    };
+
+    // loops * frames
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+        }
+    }
+    // after animation, clear the animation area
+    clearScreen();
+    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
+
+    draw_box(box_width, box_height, box_x, box_y); //description box
+
+    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); //highlighted box
+
+    draw_box(action_box_width, action_box_height, action2_x, action_y); //other action box
+
+    draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
+
+    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
+    print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
+    print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
+    updateLife();
+    set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes
+}
+//================================================Enemy SHot blanks============================
+void playAnimationEnemyShootBlank(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 17;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    resetscreen();
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {R"( |                                             
+    |                                                                  
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@@@@*+:.             
+    |                                       -%@@%%@%%@**=-            
+    |                                       #%#@@@@@@%@%%#            
+    |                                       %%%@#%%@#%#@@+            
+    |                                       *%@@*#@%+#%%%#            
+    |                                       +#@%##@#%%#@@%            
+    |                         -------------=*+=+**+=====*=------------)"                                           
+        },                  
+        {R"( |                                                                                       
+    |                                                                 
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                         :+**+*%+-:.             
+    |                                       -@**+**#%*+*++            
+    |                                      .*%%#++*#%++*##:           
+    |                                     .=@%%*+**=#**+=#-           
+    |                                     -%@@%=%**@@%@+=*            
+    |                                     %@@#..###+%#%%@#            
+    |                         -----------=#*==-+**+=====*=------------)"
+        },                  
+        {R"( |                                                                                                        
+    |                                                                 
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           +@##%*                
+    |                                           .#%%%-                
+    |                                        -**%@@@@++:.             
+    |                                       =%%@@@@%@@*#=-            
+    |                                      -#@@%%+#%@#%@@+            
+    |                                     -*@@#@*+*@@%%+@#:           
+    |                                    .*%%@#:**#%##-*+%            
+    |                                    +%#@- .%#@##**@@%            
+    |                         ----------=***=--+**+=====*=------------)"
+        },                  
+        {R"( |                                                                                                      
+    |                                                                 
+    |                                            ....                 
+    |                                           .#**%:                
+    |                                           =#@@#+                
+    |                                           =%#@@*                
+    |                                           .+@@%-                
+    |                                        .+*@@@@@*+:.             
+    |                                      .-##@%%@%%@**=-            
+    |                                     -#@@%@@@@@@%@%%#            
+    |                                   .+@%@%#*#%%@#%#@@+            
+    |                                 .=@@@*.  =*#@%+#%%%#            
+    |                                .%@@+     =##@#%%#@@%            
+    |                         -------***+------=**+=====*=------------)"
+        },                  
+        {R"( |                                                                                               
+    |                                                                 
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                               *:          :#@##:                
+    |                               .##:      :#**+*%+-:.             
+    |                                *@%- .:=%%#***#%*+*++            
+    |                                -%*#=+*+%##++*#%++*##:           
+    |                                 .+##@**%*++**=#**+=#-           
+    |                                   -#+=-  =%**@@%@+=*            
+    |                                          .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },     
+        {R"( |                                                                                               
+    |                                                                 
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                               *:          :#@##:                
+    |                               .##:      :#**+*%+-:.             
+    |                                *@%- .:=%%#***#%*+*++            
+    |                                -%*#=+*+%##++*#%++*##:           
+    |                                 .+##@**%*++**=#**+=#-           
+    |                                   -#+=-  =%**@@%@+=*            
+    |                                          .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },     
+        {R"( |                                                                                               
+    |                                                                 
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                    %      =@##:*                
+    |                                    @      :#@##:                
+    |                                   :@:   :#**+*%+-:.             
+    |                                   *%+:=%%#***#%*+*++            
+    |                                   *%@*+%##++*#%++*##:           
+    |                                   %@@**%*++**=#**+=#-           
+    |                                   =#*=-  =%**@@%@+=*            
+    |                                          .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },                  
+        {R"( |                                                           
+    |                                                                 
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                    .    :#**+*%+-:.             
+    |                                    %::=%%#***#%*+*++            
+    |                                   -%@*+%##++*#%++*##:           
+    |                                   %@@**%*++**=#**+=#-           
+    |                                   =##*-  =%**@@%@+=*            
+    |                                          .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },                  
+        {R"( |                                                           
+    |                                                                 
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                   ..    :#**+*%+-:.             
+    |                                 .--+.:=%%#***#%*+*++            
+    |                                .#   *++%##++*#%++*##:           
+    |                                .+   #-*%*++**=#**+=#-           
+    |                                 +%*::--  =%**@@%@+=*            
+    |                                 .#+-.    .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },
+        {R"( |                                                           
+    |                                                                 
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                   ..    :#**+*%+-:.             
+    |                                 .--+.:=%%#***#%*+*++            
+    |                                .#   *++%##++*#%++*##:           
+    |                                .+   #-*%*++**=#**+=#-           
+    |                                 +%*::--  =%**@@%@+=*            
+    |                                 .#+-.    .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },
+        {R"( |                                                           
+    |                                                                 
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                   ..    :#**+*%+-:.             
+    |                                 .--+.:=%%#***#%*+*++            
+    |                                .#   *++%##++*#%++*##:           
+    |                                .+   #-*%*++**=#**+=#-           
+    |                                 +%*::--  =%**@@%@+=*            
+    |                                 .#+-.    .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },
+        {R"( |                                                           
+    |                                                                 
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                    .    :#**+*%+-:.             
+    |                                    %::=%%#***#%*+*++            
+    |                                   -%@*+%##++*#%++*##:           
+    |                                   %@@**%*++**=#**+=#-           
+    |                                   =##*-  =%**@@%@+=*            
+    |                                          .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },
+        {R"( |                                                                                               
+    |                                                                 
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                               *:          :#@##:                
+    |                               .##:      :#**+*%+-:.             
+    |                                *@%- .:=%%#***#%*+*++            
+    |                                -%*#=+*+%##++*#%++*##:           
+    |                                 .+##@**%*++**=#**+=#-           
+    |                                   -#+=-  =%**@@%@+=*            
+    |                                          .###+%#%%@#            
+    |                         -----------------+**+=====*=------------)"
+        },
+        {R"( |                                                                                       
+    |                                                                 
+    |                                            ....                 
+    |                                           .#*=%:                
+    |                                           =#=*#*                
+    |                                           =@##:*                
+    |                                           :#@##:                
+    |                                         :+**+*%+-:.             
+    |                                       -@**+**#%*+*++            
+    |                                      .*%%#++*#%++*##:           
+    |                                     .=@%%*+**=#**+=#-           
+    |                                     -%@@%=%**@@%@+=*            
+    |                                     %@@#..###+%#%%@#            
+    |                         -----------=#*==-+**+=====*=------------)"
+        }, 
+        
+    };
+
+    // loops * frames
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+        }
+    }
+    // after animation, clear the animation area
+    clearScreen();
+    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
+
+    draw_box(box_width, box_height, box_x, box_y); //description box
+
+    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); //highlighted box
+
+    draw_box(action_box_width, action_box_height, action2_x, action_y); //other action box
+
+    draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
+
+    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
+    print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
+    print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
+    updateLife();
+    set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes
+}
+// ============================get item=====================================
+void playAnimationGetItem(int ms_per_frame, int loops){
+    // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
+    // choose a comfortable inner area inside that large box
+    int anim_start_x = box_x;                // left column inside the big box
+    int anim_start_y = box_y - 17;           // a few lines below the big box top border
+    int anim_width = box_width;              // max width to clear
+    resetscreen();
+    // frames (multi-line)
+    std::vector<std::vector<std::string>> frames = {
+        {R"(|
+    |
+    |
+    |
+    |
+    |
+    |
+    |                          :::::.                                
+    |                          -.....:::::------=#=.                 
+    |                          ::::::::::=-...--===:                 
+    |                                    .---+=:--:.:                
+    |                                      .-=.- -  ::               
+    |                                            -   -               
+    |                                            ----:               
+    |
+    |
+    |                                                                )"  
+        },         
+
+        {R"( |                                                
+    |                          :========--   :+-::++.                
+    |                                          ....                  
+    |
+    |
+    |
+    |
+    |                          :::::.                                
+    |                          -.....:::::------=#=.                 
+    |                          ::::::::::=-...--===:                 
+    |                                    .---+=:--:.:                
+    |                                      .-=.- -  ::               
+    |                                            -   -   ....        
+    |                                            ----: *%+::-#*.     
+    |                                                 #*.  =-.*=     
+    |                                                 %-      ++     
+    |                                                 :#=::.:+*.     )"
+        },                      
+        {R"( |                                                
+    |                          =   -::   -  .+++:-==:                
+    |                          =---------=   -+...=+:                
+    |                                         :+==+.                 
+    |
+    |
+    |
+    |                          :::::.                                
+    |                          -.....:::::------=#=.                 
+    |                          ::::::::::=-...--===:                 
+    |                                    .---+=:--:.:  :*%###+:.     
+    |                                      .-=.- -  ::=%=  +=.%-     
+    |                                            -   -%=      =+     
+    |                                            ----:+*     .#-     
+    |                                                 .:**###%-      
+    |                                                     ..+-:=.    
+    |                                                        =..=.   )"
+        },                      
+        {R"( |                                                
+    |                          - .:=.-.. -   .:+==-+*:..-=.-         
+    |                          - ::...-. -  .*#--::.=--==+-          
+    |                          =   ---   -   +=+.:==:                
+    |                          ===========   -+   =+-                
+    |                          ...........   .:=---.                 
+    |
+    |                          :::::.                                
+    |                          -.....:::::------=#=.   :*#++*+:      
+    |                          ::::::::::=-...--===:  =%=. =-:%-     
+    |                                    .---+=:--:.: %=      =+     
+    |                                      .-=.- -  ::+*..  ..*-     
+    |                                            -   - :%@%%%%:      
+    |                                            ----:  ....+.:=.    
+    |                                                       .= .=.   
+    |                                                        .= :=   
+    |                                                         .-=+   )"
+        },                      
+        {R"( |                                                
+    |                                               :-=---:          
+    |                          +---------=     ..-++**. --.-         
+    |                          - ..-.-.. -   ..+++-+*:..:=.-         
+    |                          - ::   :: -  .##.:-..+-:-+#-          
+    |                          - ..---.. -  .=-+.:+-:...-****:       
+    |                          ==-========   -+   =+: :#*:.===%:     
+    |                          :---:......   .-=--=:  %+.  :: ++     
+    |                          -.....:::::------=#=.  #=     .+=     
+    |                          ::::::::::=-...--===:  .**==-=#+.     
+    |                                    .---+=:--:.:     ::#+=:.    
+    |                                      .-=.- -  ::      .= :-.   
+    |                                            -   -       :- .=   
+    |                                            ----:        :==+   
+    |                                                          ...   
+    |
+    |                                                                )"
+        },                      
+        {R"( |                                                
+    |
+    |
+    |                                               .-=---.          
+    |                          +---------=       :=+**. =-:-         
+    |                          -   -.-   -    .=+*=**:  .+ -         
+    |                          - ::...:. -  .+*:::..+-:-+*-.         
+    |                          = ..=--:. -  .+=*-:+-:.::-=++=:       
+    |                          =-:-------=   =+   ==- .*#=:-=*#.     
+    |                          .---::.....   .==--+-  #*.  -: ++     
+    |                          =....:-----------+*=.  %=     .++     
+    |                          :---------=:...--==*:  .#+::.:**.     
+    |                                    .=--==.:=-::     -:%*+.     
+    |                                     ..-=.-.-. ::      :-.--    
+    |                                       .... -  .-       -- :-   
+    |                                            -:::-        --=+   
+    |                                                          :::   )"
+        },                      
+        {R"( |                                                
+    |
+    |
+    |
+    |
+    |
+    |                                               -==--:=          
+    |                          =::::-::::=     :-+++*+  :=.-         
+    |                          - .:-.=:. -   .-+--:=*::--=:-         
+    |                          = :::.:-. -  .**===-:--::=+:          
+    |                          -   :-:  .-   ==- .=-:  .=****=.      
+    |                          -+=+++++++=   -+...++: -%+. =--@:     
+    |                          :::::.          ---:   %=      =+     
+    |                          -..........-----:-@-.  *+     .*=     
+    |                          ..........=-...----:-  .=##***%-.     
+    |                                    .:--#=--:..-   ..:.*---.    
+    |                                      .:=::.-  .:      .= :=.   )"
+        },                      
+        {R"( |                                                
+    |
+    |
+    |
+    |
+    |
+    |
+    |
+    |                                               .:::::.          
+    |                          -::::::::::       .--+*-:=:-:         
+    |                          -   --:   -    .=+#*=*-  .+.-         
+    |                          - :=-.==. -  .-#=...:*=-++==.         
+    |                          =  .=.-.. -  .*+#+=-+ ...:+**+.       
+    |                          =...:::..:=   -+.  ==- .%#:.--=%:     
+    |                          .:-:::::::.   .=+==*=. %+.  :. ++     
+    |                          =.....:::::-----:=#=.  #=      +=     
+    |                          ::::::::::=:   :-===:  .**==-=*+.     )"
+        },                      
+        {R"( |                                                
+    |                                      ###*-+#@%#%*@#.           
+    |                                      +##==+#%##=*+%            
+    |                                     .+#%###%##+*@@%            
+    |                        -------------+**+#%#*++-+*%+------------
+    |
+    |
+    |
+    |
+    |
+    |
+    |
+    |
+    |                                               :+==:-=          
+    |                          =....:....-     .-+=+*+. :=.-         
+    |                          - .:=:=:  -    :*=-:=*. .==:-         
+    |                          - :-:.:-. -  :+#==:-.==-===-.         )"
+        },                      
+        {R"( |                                                
+    |                                          -%#@@+                
+    |                                         .:+@@%-                
+    |                                      .:%@@@@@@##-..            
+    |                                      *%@@%@%%#%#+=+            
+    |                                      #%%@%@@@@#%%#%            
+    |                                      %%@%##@%@##%@=            
+    |                                      +*%@+#@#+#%@%#            
+    |                                     .=*%###%#%##%@#            
+    |                        :::::::::::::-==:-==-::::-=-::::::::::::
+    |
+    |
+    |
+    |
+    |
+    |                                               :==--:-          
+    |                          =::::-::::=     .:=++**. :=.-         )"
+        }                      
+    };
+    // loops * frames
+    for(int lp = 0; lp < loops; lp++){
+        for(size_t f = 0; f < frames.size(); f++){
+            // draw each line of the frame
+            for(size_t line = 0; line < frames[f].size(); line++){
+                // center the frame horizontally inside the big box inner area
+                int line_x = anim_start_x + (anim_width - (int)frames[f][line].length())/2;
+                int line_y = anim_start_y + (int)line;
+                // clear the full line region first
+                set_cursor_position(anim_start_x, line_y);
+                std::cout << std::string(anim_width, ' ');
+                // print the frame line
+                set_cursor_position(line_x, line_y);
+                std::cout << frames[f][line];
+            }
+            std::cout << std::flush;
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms_per_frame));
+            resetscreen();
+        }
+    }
+    // after animation, clear the animation area
+    clearScreen();
+    draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
+
+    draw_box(box_width, box_height, box_x, box_y); //description box
+
+    draw_box_alt(action_box_width, action_box_height, action1_x, action_y); //highlighted box
+
+    draw_box(action_box_width, action_box_height, action2_x, action_y); //other action box
+
+    draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
+
+    print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
+    print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
+    print_in_box("ITEM", action3_x, action_y, action_box_width, action_box_height);
+    updateLife();
+    set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes
+    idle(50,3);
+}
+// =========================inspect=====================================
 void playAnimationInspect(int ms_per_frame, int loops){
     // coordinates: outer big box was drawn with x_offset = box_x - 2, y_offset = box_y - 18
     // choose a comfortable inner area inside that large box
@@ -801,7 +2796,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
     resetscreen();
     // frames (multi-line)
     std::vector<std::vector<std::string>> frames = {
-        {R"(                                        
+        {R"( |                                        
     |                                                       :xXXx:       
     |                                                     :XX:.;;+$:     
     |                              :::::.                 $+   :: ++     
@@ -816,7 +2811,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
                                                                                         
         },         
                             
-        {R"(                                                
+        {R"( |                                                
     |                              :::::.                                
     |                              ;    ::::::;;;;;:+X;    :xXx+xx:      
     |                              ::::::::::+:...::;;+:  ;$;  +;:$;     
@@ -828,7 +2823,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
     |                                                            .; :+   
     |                                                             .;++   )"
         },                      
-        {R"(                                                
+        {R"( |                                                
     |                              :::::.                                
     |                              ;    ::::::;;;;;:+X;                  
     |                              ::::::::::+:...::;;+:                 
@@ -840,7 +2835,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
     |                                                           +::;     
     |                                                            + .;.   )"
         },                      
-        {R"(                                                
+        {R"( |                                                
     |                              :::::.                                
     |                              ;    ::::::;;;;;:+X;                  
     |                              ::::::::::+:...::;;+:                 
@@ -852,7 +2847,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
     |                                                     $;      ++     
     |                                                     :X;::.:+x.     )"
         },                      
-        {R"(                                                
+        {R"( |                                                
     |                              :::::.                                
     |                              ;    ::::::;;;;;:+X;                  
     |                              ::::::::::+:...::;;+:                 
@@ -864,7 +2859,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
     |          
     |                                                                    )"
         },                      
-        {R"(                                                
+        {R"( |                                                
     |                              :::::.                                
     |                              ;    ::::::;;;;;:+X;                  
     |                              ::::::::::+:...::;;+:                 
@@ -876,7 +2871,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
     |                                                          ;;        
     |                                                          ;;        )"
         },                      
-        {R"(                                                
+        {R"( |                                                
     |                              :::::.                  .;;;;;;;;;.   
     |                              ;    ::::::;;;;;:+X;  ;++:::   ::;+;: 
     |                              ::::::::::+:...::;;+;++:           :++
@@ -888,7 +2883,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
     |                                                  ++:             :+
     |                                                   ;+;:         :;+;)"
         },                      
-        {R"(                                                
+        {R"( |                                                
     |                                                 ;;;+;;;;;;         
     |                              :::::.          :;x;+:    .:;+;:      
     |                              ;    ::::::;;;;xx+$$:         ;+;     
@@ -901,7 +2896,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
     |                                             .;+;:        :;+;:::;. 
     |                                               .:;+;;:::;+;;.     :;)"
         },                      
-        {R"(                                                
+        {R"( |                                                
     |                                           .;;;;;+;;.               
     |                                        .+++:......:+++             
     |                                       ;+;.          .;+;           
@@ -916,7 +2911,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
     |                                            .::::::.           :::;.
     |                                                                   :)"
         },                      
-        {R"(                                                
+        {R"( |                                                
     |                                           .;;;;;+;;.               
     |                                        .+++:......:+++             
     |                                       ;+;.          .;+;           
@@ -931,7 +2926,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
     |                                            .::::::.           :::;.
     |                                                                   :)"
         },                      
-        {R"(                                                
+        {R"( |                                                
     |                                           .;;;;;+;;.               
     |                                        .+++:......:+++             
     |                                       ;+;.          .;+;           
@@ -946,7 +2941,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
     |                                            .::::::.           :::;.
     |                                                                   :)"
         },                      
-        {R"(                                                
+        {R"( |                                                
     |                                           .;;;;;+;;.               
     |                                        .+++:......:+++             
     |                                       ;+;.          .;+;           
@@ -982,6 +2977,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
         }
     }
     // after animation, clear the animation area
+    clearScreen();
     draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
 
     draw_box(box_width, box_height, box_x, box_y); //description box
@@ -999,32 +2995,73 @@ void playAnimationInspect(int ms_per_frame, int loops){
     set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes
 }
 
+void shoot(int which, bool isDoubleDamage){
+    std::string message = "";
+    if(which == 1 && bulletNow == 1 && enemyDD){
+        player_life -= 2;
+        whoseTurn = 0;
+        enemyDD = false;
+        playAnimationEnemyShootLive(250,1);
+        message = "You were shot by a double damage bullet. Your health drops by 2";
+    }else if(which == 0 && bulletNow == 1 && playerDD){
+        enemy_life -= 2;
+        whoseTurn = 1;
+        message = "You shot him using Double Damage, causing his health to drop by 2.";
+        playAnimationShotEnemyLive(250,1);
+    } else if(which == 0 && bulletNow == 1){
+        enemy_life -= 1;
+        whoseTurn = 1;
+        message = "You shot him with a live bullet";
+        playAnimationShotEnemyLive(250,1);
+    }
+    else if(which == 0 && bulletNow == 0){
+        whoseTurn = 1;
+        message = "You shot him with a blank";
+        playAnimationShotEnemyBlank(250,1);
+    }
+    else if(which == 1 && bulletNow == 1){
+        player_life -= 1;
+        whoseTurn = 0;
+        playAnimationEnemyShootLive(250,1);
+        message = "He shot you with a live bullet";
+    }
+    else if(which == 1 && bulletNow == 0){
+        whoseTurn = 0;
+        playAnimationEnemyShootBlank(250,1);
+        message = "He shot you with a blank";
+    }
+    clearBox();
+    print_in_box_animated(message, box_x, box_y, box_width, box_height, 40);
+    updateLife();
+    std::this_thread::sleep_for(std::chrono::seconds(3)); // Wait for the player to see
+}
+
 void shootSelf(int which, bool isDoubleDamage){
     std::string message = "";
     if(which == 0 && bulletNow == 1 && playerDD){
         player_life -= 2;
         whoseTurn = 1;
         message = "You shot yourself using Double Damage, causing your health to drop by 2.";
-        playAnimationShotSelf(100, 1);
+        playAnimationPlayerSSLive(250, 1);
     } else if(which == 0 && bulletNow == 1){
         player_life -= 1;
         whoseTurn = 1;
         message = "You shot yourself with a live bullet";
-        playAnimationShotSelf(100, 1);
+        playAnimationPlayerSSLive(250, 1);
     }
     else if(which == 0 && bulletNow == 0){
         message = "You shot yourself, but luckily it was a blank";
-        playAnimationShotSelfblank(100, 1);
+        playAnimationPlayerSSBlank(250, 1);
     }
     else if(which == 1 && bulletNow == 1){
         enemy_life -= 1;
         whoseTurn = 0;
         message = "The enemy shot himself with a live bullet";
-        playAnimationShotSelf(100, 1);
+        playAnimationShotSelf(250, 1);
     }
     else if(which == 1 && bulletNow == 0){
         message = "The enemy shot himself, but it was a blank";
-        playAnimationShotSelfblank(100, 1);
+        playAnimationShotSelfblank(250, 1);
     }
     clearBox();
     print_in_box_animated(message, box_x, box_y, box_width, box_height, 40);
@@ -1037,6 +3074,7 @@ void user_input(){
                 while(whoseTurn == 0){
                     if(noMessage == true){ //Show message when needed
                         clearBox();
+                        idle(50,6);
                         print_in_box_animated("It's your turn", box_x, box_y, box_width, box_height, 40);
                         std::this_thread::sleep_for(std::chrono::seconds(1));
                         print_in_box("press 'a' or 'd' to navigate, and press enter to continue", box_x, box_y + 1, box_width, box_height);
@@ -1044,8 +3082,8 @@ void user_input(){
                     }
                     if(_kbhit()){ //selected refers to which action box is selected
                         char c = _getch();
-                        if(c == 'a' && selected > 0) selected--;
-                        if(c == 'd' && selected < 2) selected++;
+                        if(c == 'a' && selected > 0) selected--, blipSound();
+                        if(c == 'd' && selected < 2) selected++ , blipSound();
                         if(c == 13){
                             if(selected == 0){
                                 shoot(0, playerDD);
@@ -1218,6 +3256,16 @@ void askPlayer(){
 
 
 int main(){
+    clearScreen();
+    clearBox();
+    std::cout << "\033[?25l";
+    clearScreen();
+    clearScreen();
+    INTRO(10,1);
+    std::cout << "\n";
+    loading_dots();
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    clearScreen();
     draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
 
     draw_box(box_width, box_height, box_x, box_y); //description box
@@ -1228,7 +3276,7 @@ int main(){
 
     draw_box(action_box_width, action_box_height, action3_x, action_y); //other action box
 
-    idle(100,1);
+    idle(50,8);
 
     print_in_box("SHOOT ENEMY", action1_x + 1, action_y, action_box_width, action_box_height);  //action box texts
     print_in_box("SHOOT YOURSELF", action2_x, action_y, action_box_width, action_box_height);
@@ -1272,21 +3320,28 @@ int main(){
         // Start of the round, here we display the barrel and 3 random items
 
         print_in_box_animated("Round " + std::to_string(roundIndex), box_x, box_y, box_width, box_height);
+        blipSound();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        idle(50,6);
         std::this_thread::sleep_for(std::chrono::seconds(3)); // Wait for the player to see
         clearBox();
         print_in_box_animated("Spinning the barrel", box_x, box_y, box_width, box_height, 40);
+        blipSound();
         loading_dots();
         playAnimationInspect(300,1);
-        buarel(100,1);
         resetscreen();
+        buarel(100,3);
+        blipSound();
         displayBarrel();
         std::this_thread::sleep_for(std::chrono::seconds(6)); // Wait for the player to see
         resetscreen();
-        idle(100,1);
+        idle(50,6);
         print_in_box_animated("                                       ", box_x, box_y, box_width, box_height, 10);
         print_in_box_animated("                            ", box_x, box_y + 1, box_width, box_height, 10);
         print_in_box_animated("Getting 3 random items", box_x, box_y, box_width, box_height, 40);
         loading_dots();
+        blipSound();
+        playAnimationGetItem(200,1);
         print_in_box_animated("                                       ", box_x, box_y, box_width, box_height, 10);
         give_random_items();
         std::this_thread::sleep_for(std::chrono::seconds(6)); // Wait for the player to see
@@ -1324,7 +3379,7 @@ int main(){
                     user_input();
                 } else{
                     clearBox();
-                    idle(100,1);
+                    idle(50,6);
                     print_in_box_animated("It's enemy's turn", box_x, box_y, box_width, box_height, 40);
                     std::this_thread::sleep_for(std::chrono::seconds(2));
                     int rand_item = rand() % 3;
