@@ -116,14 +116,14 @@ void updateLife() {
 
     
     setTextColor(FOREGROUND_GREEN);
-    for (int i = 0; i < player_life; i++) std::cout << "❤ ";
+    for (int i = 0; i < player_life; i++) std::cout << "█ ";
     setTextColor(7); 
 
     print_in_box("Enemy's life:\n    |  ", box_x - 33, box_y + 7, box_width, box_height);
 
     
     setTextColor(FOREGROUND_GREEN);
-    for (int i = 0; i < enemy_life; i++) std::cout << "❤ ";
+    for (int i = 0; i < enemy_life; i++) std::cout << "█ ";
     setTextColor(7); 
 
     set_cursor_position(0, action_y + action_box_height + 4);
