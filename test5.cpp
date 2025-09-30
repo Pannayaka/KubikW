@@ -1,3 +1,53 @@
+
+                                                                   
+//                                                  /$$      /$$ /$$$$$$$$ /$$        /$$$$$$   /$$$$$$  /$$      /$$ /$$$$$$$$
+//                                                 | $$  /$ | $$| $$_____/| $$       /$$__  $$ /$$__  $$| $$$    /$$$| $$_____/
+//                                                 | $$ /$$$| $$| $$      | $$      | $$  \__/| $$  \ $$| $$$$  /$$$$| $$      
+//                                                 | $$/$$ $$ $$| $$$$$   | $$      | $$      | $$  | $$| $$ $$/$$ $$| $$$$$   
+//                                                 | $$$$_  $$$$| $$__/   | $$      | $$      | $$  | $$| $$  $$$| $$| $$__/   
+//                                                 | $$$/ \  $$$| $$      | $$      | $$    $$| $$  | $$| $$\  $ | $$| $$      
+//                                                 | $$/   \  $$| $$$$$$$$| $$$$$$$$|  $$$$$$/|  $$$$$$/| $$ \/  | $$| $$$$$$$$
+//                                                 |__/     \__/|________/|________/ \______/  \______/ |__/     |__/|________/
+//                                                                                                                             
+//                                                                                                                             
+//                                                                                                                             
+//                                                                          /$$$$$$$$ /$$$$$$                                  
+//                                                                         |__  $$__//$$__  $$                                 
+//                                                                            | $$  | $$  \ $$                                 
+//                                                                            | $$  | $$  | $$                                 
+//                                                                            | $$  | $$  | $$                                 
+//                                                                            | $$  | $$  | $$                                 
+//                                                                            | $$  |  $$$$$$/                                 
+//                                                                            |__/   \______/                                  
+//                                                                                                                             
+//                                                                                                                             
+//                                                                                                                             
+//                                                  /$$   /$$ /$$$$$$$$ /$$        /$$$$$$  /$$$$$$ /$$   /$$ /$$   /$$ /$$$$$$
+//                                                 | $$  | $$| $$_____/| $$       /$$__  $$|_  $$_/| $$$ | $$| $$  /$$/|_  $$_/
+//                                                 | $$  | $$| $$      | $$      | $$  \__/  | $$  | $$$$| $$| $$ /$$/   | $$  
+//                                                 | $$$$$$$$| $$$$$   | $$      |  $$$$$$   | $$  | $$ $$ $$| $$$$$/    | $$  
+//                                                 | $$__  $$| $$__/   | $$       \____  $$  | $$  | $$  $$$$| $$  $$    | $$  
+//                                                 | $$  | $$| $$      | $$       /$$  \ $$  | $$  | $$\  $$$| $$\  $$   | $$  
+//                                                 | $$  | $$| $$$$$$$$| $$$$$$$$|  $$$$$$/ /$$$$$$| $$ \  $$| $$ \  $$ /$$$$$$
+//                                                 |__/  |__/|________/|________/ \______/ |______/|__/  \__/|__/  \__/|______/
+//                                                                                                                             
+                                                                            
+                                                                            
+                                                                   
+                                                                   
+
+
+
+
+
+
+
+
+
+
+
+
+
 #include <iostream>
 #include <string>
 #include <windows.h>
@@ -71,6 +121,53 @@ void draw_box(int width, int height, int x_offset = 0, int y_offset = 0) {
     set_cursor_position(x_offset, y_offset + height - 1);
     std::cout << "+" << std::string(width - 2, '-') << "+" << std::endl;
     
+}
+
+void showRules() {
+    int leftMargin = 15; // Number of spaces to shift right
+    std::vector<std::string> rules = {
+        "",
+        "",
+        "",
+        "=================== Aturan Permainan Buckshot Roulette ==================",
+        "",
+        "1. Permainan dimulai dari ronde 1.",
+        "   - Di awal setiap ronde, 6 peluru dimasukkan ke dalam revolver",
+        "   - Diantara 6 peluru tersebut, ada yang 'Live Bullet' dan ada yang 'Blank'.",
+        "   - 'Live Bullet' akan mengurangi darah sebanyak 1 jika ditembak, sedangkan 'Blank' tidak.",
+        "",
+        "",
+        "2. Pada giliranmu, kamu bisa memilih:",
+        "   - Tembak musuh  -> setelah menembak, giliran pindah ke musuh (kecuali pakai handcuff).",
+        "   - Tembak diri   -> jika 'Blank', giliran tetap milikmu; jika 'Live Bullet', giliran pindah ke lawan.",
+        "   - Gunakan item  -> tidak mengakhiri giliran, jadi kamu tetap bisa menembak setelahnya.",
+        "",
+        "",
+        "3. Di awal permainan, setiap pemain mendapat 3 item acak dari sistem.",
+        "   Daftar Item:",
+        "   - Heal            : menambah darah +1.",
+        "   - Double Damage   : tembakan berikutnya memberikan 2x damage.",
+        "   - Magnifying Glass: melihat apakah peluru di giliranmu 'Live Bullet' atau 'Blank'.",
+        "   - Handcuff        : membuat lawan melewatkan giliran berikutnya.",
+        "",
+        "",
+        "Tujuan: Bertahan hidup dan kalahkan lawanmu!",
+        "==========================================",
+        "",
+        ""
+    };
+    for(const auto& line : rules) {
+        std::cout << std::string(leftMargin, ' ') << line << std::endl;
+    }
+    std::cout << std::string(leftMargin, ' ') << "Tekan Enter untuk memulai permainan...";
+    while(true){
+        if(_kbhit()){
+            char ch = _getch();
+            if(ch == 13){
+                break;
+            }
+        }
+    }
 }
 
 
@@ -2995,6 +3092,7 @@ void playAnimationInspect(int ms_per_frame, int loops){
     set_cursor_position(0, action_y + action_box_height + 4); // Move cursor well below the boxes
 }
 
+
 void shoot(int which, bool isDoubleDamage){
     std::string message = "";
     if(which == 1 && bulletNow == 1 && enemyDD){
@@ -3266,6 +3364,8 @@ int main(){
     loading_dots();
     std::this_thread::sleep_for(std::chrono::seconds(2));
     clearScreen();
+    showRules();
+    clearScreen();
     draw_box(box_width + 4, box_height + 23, box_x - 2, box_y - 18); //biggest box
 
     draw_box(box_width, box_height, box_x, box_y); //description box
@@ -3420,3 +3520,5 @@ int main(){
     }
     return 0;
 }
+
+//end
